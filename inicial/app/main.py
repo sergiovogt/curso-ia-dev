@@ -1,46 +1,70 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, status
 
+from app.database import init_db
+from app.repository import TaskRepository
 from app.schemas import Task, TaskCreate, TaskUpdate
 
-app = FastAPI(title="CRUD de Tareas", version="1.0.0")
+repo = TaskRepository()
 
-_tasks: dict[int, Task] = {}
-_next_id = 1
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 
 
 @app.post("/tasks", response_model=Task, status_code=status.HTTP_201_CREATED)
 def create_task(payload: TaskCreate) -> Task:
-    global _next_id
-    task = Task(id=_next_id, **payload.model_dump())
-    _tasks[_next_id] = task
-    _next_id += 1
-    return task
+    return repo.create(payload)
 
 
 @app.get("/tasks", response_model=list[Task])
 def list_tasks() -> list[Task]:
-    return list(_tasks.values())
+    return repo.list_all()
 
 
-@app.put("/tasks/{task_id}", response_model=Task)
-def update_task(task_id: int, payload: TaskUpdate) -> Task:
-    if task_id not in _tasks:
+@app.get("/tasks/{task_id}", response_model=Task)
+def get_task(task_id: int) -> Task:
+    task = repo.get_by_id(task_id)
+    if task is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Tarea con id {task_id} no encontrada",
         )
+    return task
 
-    current = _tasks[task_id]
-    updated = current.model_copy(update=payload.model_dump(exclude_unset=True))
-    _tasks[task_id] = updated
+
+@app.put("/tasks/{task_id}", response_model=Task)
+def update_task(task_id: int, payload: TaskUpdate) -> Task:
+    updated = repo.update(task_id, payload)
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tarea con id {task_id} no encontrada",
+        )
+    return updated
+
+
+@app.patch("/tasks/{task_id}/complete", response_model=Task)
+def complete_task(task_id: int) -> Task:
+    updated = repo.mark_complete(task_id)
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tarea con id {task_id} no encontrada",
+        )
     return updated
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(task_id: int) -> None:
-    if task_id not in _tasks:
+    if not repo.delete(task_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Tarea con id {task_id} no encontrada",
         )
-    del _tasks[task_id]
