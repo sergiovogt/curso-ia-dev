@@ -32,13 +32,15 @@ htmlcov/
 *.sqlite3
 
 # IDE / editores
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 .idea/
 *.swp
 *.swo
 
 # Cursor
-.cursor/
+.cursor/*
+!.cursor/mcp.json
 
 # SO
 .DS_Store
