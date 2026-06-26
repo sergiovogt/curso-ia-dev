@@ -41,6 +41,7 @@ htmlcov/
 # Cursor
 .cursor/*
 !.cursor/mcp.json
+!.cursor/skills/
 
 # SO
 .DS_Store
