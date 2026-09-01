@@ -8,15 +8,10 @@
     :root { font-family: system-ui, -apple-system, sans-serif; }
     body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
     h1 { font-size: 1.5rem; margin-bottom: 1.25rem; }
-    form.add { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
-    form.add input[type=text],
-    form.add input[type=date],
-    form.add select { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font-size: .95rem; }
-    form.add input[name=title] { flex: 2; min-width: 140px; }
-    form.add input[name=description] { flex: 3; min-width: 160px; }
-    form.filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; margin-bottom: 1.5rem; padding: .75rem; border: 1px solid #eee; border-radius: 8px; background: #fafafa; }
-    form.filters label { display: flex; flex-direction: column; gap: .25rem; font-size: .8rem; color: #555; }
-    form.filters .checks { display: flex; gap: 1rem; align-items: center; padding-top: 1.1rem; }
+    form.add { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+    form.add input[type=text] { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font-size: .95rem; }
+    form.add input[name=title] { flex: 2; }
+    form.add input[name=description] { flex: 3; }
     button { padding: .5rem .75rem; border: 1px solid #ccc; border-radius: 6px; background: #f5f5f5; cursor: pointer; font-size: .85rem; }
     button:hover { background: #ececec; }
     ul { list-style: none; padding: 0; margin: 0; }
@@ -25,15 +20,9 @@
     li .title { font-weight: 600; }
     li.done .title { text-decoration: line-through; color: #999; }
     li .desc { font-size: .9rem; color: #555; margin-top: .15rem; }
-    li .meta { font-size: .78rem; color: #999; margin-top: .25rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    li .meta { font-size: .78rem; color: #999; margin-top: .25rem; }
     .empty { color: #999; font-style: italic; padding: 1rem 0; }
     .inline { display: inline; }
-    .badge { display: inline-block; padding: .1rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 600; text-transform: uppercase; }
-    .badge-prioridad-alta { background: #fde8e8; color: #b42318; }
-    .badge-prioridad-media { background: #fff4e5; color: #b54708; }
-    .badge-prioridad-baja { background: #eef4ff; color: #175cd3; }
-    .badge-vencida { background: #fee4e2; color: #b42318; }
-    li.overdue { border-left: 3px solid #f04438; padding-left: .5rem; }
   </style>
 </head>
 <body>
@@ -42,73 +31,17 @@
   <form class="add" method="post" action="/ui/tasks">
     <input type="text" name="title" placeholder="Nueva tarea..." required>
     <input type="text" name="description" placeholder="Descripción (opcional)">
-    <select name="prioridad">
-      <option value="alta">Alta</option>
-      <option value="media" selected>Media</option>
-      <option value="baja">Baja</option>
-    </select>
-    <input type="date" name="fecha_limite" aria-label="Fecha límite">
     <button type="submit">Agregar</button>
-  </form>
-
-  <form class="filters" method="get" action="/">
-    <label>
-      Prioridad
-      <input type="text" name="prioridad" placeholder="alta,media"
-        value="{{ filters.prioridad | map(attribute='value') | join(',') if filters.prioridad else '' }}">
-    </label>
-    <label>
-      Desde
-      <input type="date" name="fecha_desde"
-        value="{{ filters.fecha_desde.isoformat() if filters.fecha_desde else '' }}">
-    </label>
-    <label>
-      Hasta
-      <input type="date" name="fecha_hasta"
-        value="{{ filters.fecha_hasta.isoformat() if filters.fecha_hasta else '' }}">
-    </label>
-    <label>
-      Orden
-      <select name="orden">
-        <option value="" {% if not filters.orden %}selected{% endif %}>Por defecto</option>
-        <option value="prioridad" {% if filters.orden and filters.orden.value == 'prioridad' %}selected{% endif %}>Prioridad</option>
-        <option value="fecha_limite" {% if filters.orden and filters.orden.value == 'fecha_limite' %}selected{% endif %}>Fecha límite</option>
-      </select>
-    </label>
-    <label>
-      Dirección
-      <select name="dir">
-        <option value="asc" {% if filters.dir.value == 'asc' %}selected{% endif %}>Ascendente</option>
-        <option value="desc" {% if filters.dir.value == 'desc' %}selected{% endif %}>Descendente</option>
-      </select>
-    </label>
-    <div class="checks">
-      <label><input type="checkbox" name="vencidas" value="1" {% if filters.vencidas %}checked{% endif %}> Vencidas</label>
-      <label><input type="checkbox" name="sin_fecha" value="1" {% if filters.sin_fecha %}checked{% endif %}> Sin fecha</label>
-    </div>
-    <button type="submit">Filtrar</button>
   </form>
 
   {% if tasks %}
   <ul>
     {% for t in tasks %}
-    {% set is_overdue = (not t.completed) and t.fecha_limite and t.fecha_limite < today %}
-    <li class="{{ 'done' if t.completed else '' }}{{ ' overdue' if is_overdue else '' }}">
+    <li class="{{ 'done' if t.completed else '' }}">
       <div class="body">
         <div class="title">{{ t.title }}</div>
         {% if t.description %}<div class="desc">{{ t.description }}</div>{% endif %}
-        <div class="meta">
-          <span class="badge badge-prioridad-{{ t.prioridad.value }}">{{ t.prioridad.value }}</span>
-          {% if t.fecha_limite %}
-            <span>Fecha límite: {{ t.fecha_limite.isoformat() }}</span>
-          {% else %}
-            <span>Sin fecha límite</span>
-          {% endif %}
-          {% if is_overdue %}
-            <span class="badge badge-vencida">Vencida</span>
-          {% endif %}
-          <span>Creada: {{ t.created_at.strftime('%Y-%m-%d') }}</span>
-        </div>
+        <div class="meta">Creada: {{ t.created_at.strftime('%Y-%m-%d') }}</div>
       </div>
       {% if not t.completed %}
       <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/complete">

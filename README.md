@@ -1,50 +1,51 @@
-# Curso: IA en el IDE para developers
+# Curso: IA aplicada para equipos de desarrollo
 
-Material de capacitación para equipos de desarrollo sobre cómo trabajar con
-modelos de IA en el editor (Cursor y GitHub Copilot): cómo piensan los modelos,
-cómo controlar el contexto y cómo usar las herramientas del IDE de forma efectiva.
+Material de capacitación sobre cómo trabajar con modelos de IA en el día a día
+del desarrollo: cómo piensan los modelos, cómo controlar el contexto y los
+tokens, y cómo llevar eso a un flujo de trabajo real.
 
-El curso está organizado en tres niveles progresivos, cada uno con su proyecto
-de práctica sobre el **mismo CRUD de tareas en FastAPI**, que va ganando
-madurez a medida que se sube de nivel.
+Las sesiones se dictan con **Claude Code**, pero casi todo lo que se ve aplica
+igual a cualquier agente de código —Codex, Gemini CLI o el que venga—, porque el
+tema de fondo no es la herramienta sino cómo se le da contexto.
+
+El curso está organizado en tres niveles progresivos, cada uno con su proyecto de
+práctica sobre el **mismo CRUD de tareas en FastAPI**, que va ganando madurez a
+medida que se sube de nivel.
 
 ## Estructura del repo
 
 ```
 .
+├── skills/          # Skills de ejemplo, entregadas con el nivel inicial
 ├── inicial/         # Nivel 1 — fundamentos: prompting, contexto y tokens
-│   ├── app/         # CRUD de tareas (FastAPI)
-│   ├── docs/        # cheatsheet, buenas prácticas y slides
-│   └── requirements.txt
-├── intermedio/      # Nivel 2 — skills del proyecto + MCP
-│   ├── app/
-│   ├── .cursor/     # skills reutilizables + configuración de MCP
-│   ├── docs/        # CODING_STANDARDS.md
-│   └── README-mcp.md
+├── intermedio/      # Nivel 2 — skills de proyecto + MCP
 └── avanzado/        # Nivel 3 — Spec-Driven Development (SDD)
-    ├── app/         # el mismo CRUD, ahora con página web (Jinja2)
-    ├── templates/   # esqueletos de spec / plan / tasks
-    └── requirements.txt
 ```
-
-### Requisitos
-
-- Python 3.12+
 
 Cada nivel es autocontenido: se trabaja parado dentro de su carpeta, con su
 propio `requirements.txt`.
 
-## Nivel inicial — fundamentos
+**Las diferencias entre los tres niveles son deliberadas.** Hay carencias puestas
+a propósito —código sin tests, campos que no se exponen, endpoints que faltan—
+que son el material de las sesiones. No las unifiquen ni las "arreglen" por
+adelantado: son el ejercicio.
 
-Un **CRUD de tareas** en FastAPI, deliberadamente simple y con "huecos" (sin
-tests, endpoints faltantes) para demostrar en vivo las funcionalidades del IDE:
-autocompletado, edición inline, chat con contexto, reglas del proyecto y
-generación de tests.
+El stack es Python. Es a propósito que no coincida con el de tu equipo: lo que se
+practica son las técnicas de trabajo con IA, no el framework.
+
+### Requisitos
+
+- Python 3.12+
+- Un agente de código instalado (el curso usa Claude Code)
+
+### Puesta en marcha
+
+Idéntica en los tres niveles:
 
 ```bash
-cd inicial
+cd inicial            # o intermedio / avanzado
 python -m venv .venv
-# Windows:  .venv\Scripts\activate
+# Windows:   .venv\Scripts\activate
 # Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
@@ -52,54 +53,61 @@ uvicorn app.main:app --reload
 
 API en `http://127.0.0.1:8000` y documentación interactiva en `/docs`.
 
-**Documentación** (`inicial/docs/`):
-- `cheatsheet-cursor.md` — comandos y atajos de Cursor en una hoja (Windows).
-- `buenas-practicas-tokens.md` — optimización de contexto y tokens.
-- `Capacitacion_1_Slides.pptx` — slides de la primera sesión.
+---
+
+## Nivel inicial — fundamentos
+
+Un **CRUD de tareas** en FastAPI, deliberadamente simple. Es la base sobre la que
+se practica lo esencial: escribir prompts específicos, entender qué ocupa la
+ventana de contexto, y revisar lo que el agente propone antes de aceptarlo.
+
+**Por dónde empezar:**
+
+1. Clonar, entrar a `inicial/` y levantar el proyecto.
+2. Abrir el agente parado en esa carpeta y correr `/context` **sin escribir
+   nada**. Van a ver que una sesión vacía ya arranca con decenas de miles de
+   tokens ocupados. Vale la pena mirar qué los ocupa.
+3. Correr `/init` para que genere el archivo de contexto del proyecto, y después
+   **leerlo entero**. Lo generado es un punto de partida, no el producto: casi
+   siempre trae cosas de más y alguna interpretación equivocada, y ese archivo se
+   carga en todas las sesiones siguientes.
+4. Abrir el `settings.json` del usuario y el `.claude/settings.local.json` del
+   proyecto, y leer qué permisos hay concedidos. Las reglas de `allow` le ganan
+   al modo de permisos: si `Edit` está permitido, el diff de confirmación no
+   aparece en ningún modo.
 
 ## Nivel intermedio — skills + MCP
 
-El mismo CRUD, esta vez para practicar cómo **extender el IDE**: dar contexto a
-nivel de codebase con *skills* reutilizables y a nivel de herramientas con
+El mismo CRUD, esta vez para practicar cómo **extender el agente**: dar contexto
+a nivel de codebase con *skills* reutilizables, y a nivel de herramientas con
 servidores *MCP*.
 
-- `.cursor/skills/code-review-fastapi/` — una skill de code review sobre el
-  proyecto, con sus ejemplos.
-- `.cursor/mcp.json` — configuración de un servidor MCP.
-- `docs/CODING_STANDARDS.md` — estándares que las skills toman como referencia.
-- `README-mcp.md` — cómo levantar y usar el MCP en este nivel.
-
-Puesta en marcha idéntica al nivel inicial (`cd intermedio`, venv, `pip install`,
-`uvicorn app.main:app --reload`).
+- Una skill de code review sobre el proyecto, con sus ejemplos.
+- `docs/CODING_STANDARDS.md` — los estándares que la skill toma como referencia.
+- `README-mcp.md` — cómo levantar y usar un MCP en este nivel.
 
 ## Nivel avanzado — Spec-Driven Development
 
 El mismo CRUD, ahora con **página web** (server-rendered con Jinja2) y sembrado
 con tareas de ejemplo. Es la base para practicar el flujo **spec → plan →
-tasks**: en vez de pedirle a la IA que construya algo directo, se define primero
-*qué* hay que construir y *qué significa que está terminado*, con revisión
-humana en cada paso.
-
-```bash
-cd avanzado
-python -m venv .venv
-# Windows:  .venv\Scripts\activate
-# Linux/Mac: source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-La página queda en `http://127.0.0.1:8000/` y la API JSON en `/tasks` (+ `/docs`).
+tasks**: en vez de pedirle al agente que construya algo directo, se define
+primero *qué* hay que construir y *qué significa que está terminado*, con
+revisión humana en cada paso.
 
 - `templates/spec.md`, `plan.md`, `tasks.md` — esqueletos reutilizables de los
-  tres artefactos de SDD. Se copian y se completan para cada feature nueva.
+  tres artefactos. Se copian y se completan para cada feature nueva.
 
-### Ramas de la demo (SDD)
+Este nivel arranca **sin la feature construida**: el punto de partida es común, y
+durante la sesión se construye la misma funcionalidad de dos maneras distintas
+para poder compararlas. Las ramas con cada versión se publican en su momento.
 
-El flujo se demuestra construyendo la misma feature de dos formas sobre esta base:
+---
 
-- **`main`** — estado inicial: el CRUD con web UI, sin la feature.
-- **`demo-a-congelada`** — la feature hecha con *vibe coding* (un pedido directo,
-  sin spec): sirve para ver las decisiones que la IA toma sola.
-- **`demo-b-referencia`** — la misma feature con el flujo SDD completo (spec →
-  plan → tasks) y su suite de tests.
+## Skills
+
+En `skills/` hay dos skills de ejemplo que se entregan con el nivel inicial:
+`log-session` y `retomar-sesion`. Resuelven qué hacer cuando el contexto se
+llena — registrar la sesión, limpiarla y retomarla sin arrastrar el ruido.
+
+Ver **[`skills/README.md`](skills/README.md)** para la instalación y para cómo
+está hecha una skill por dentro.
