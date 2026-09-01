@@ -1,0 +1,11 @@
+# Normalizar fines de linea a LF en el repo.
+# Sin esto, editar desde una herramienta de Windows convierte los archivos a CRLF
+# y git los reporta como modificados enteros, aunque no cambie una sola linea.
+* text=auto eol=lf
+
+# Binarios: que git no los toque.
+*.png binary
+*.jpg binary
+*.pptx binary
+*.pdf binary
+*.db binary
