@@ -11,6 +11,17 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def _migrate_add_priority_and_due_date(conn: sqlite3.Connection) -> None:
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+    if "prioridad" not in columns:
+        conn.execute(
+            "ALTER TABLE tasks ADD COLUMN prioridad TEXT NOT NULL DEFAULT 'media'"
+        )
+    if "fecha_limite" not in columns:
+        conn.execute("ALTER TABLE tasks ADD COLUMN fecha_limite TEXT")
+    conn.commit()
+
+
 def init_db() -> None:
     conn = get_connection()
     conn.execute(
@@ -20,11 +31,14 @@ def init_db() -> None:
             title TEXT NOT NULL,
             description TEXT,
             completed BOOLEAN NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            prioridad TEXT NOT NULL DEFAULT 'media',
+            fecha_limite TEXT
         )
         """
     )
     conn.commit()
+    _migrate_add_priority_and_due_date(conn)
     _seed_if_empty(conn)
     conn.close()
 

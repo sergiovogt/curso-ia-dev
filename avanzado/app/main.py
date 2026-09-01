@@ -1,16 +1,29 @@
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, Form, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 
 from app.database import init_db
+from app.dates import today_app
+from app.list_params import TaskListParams, task_list_params_from_query
 from app.repository import TaskRepository
-from app.schemas import Task, TaskCreate, TaskUpdate
+from app.schemas import Prioridad, Task, TaskCreate, TaskUpdate
 
 repo = TaskRepository()
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
+
+
+def get_task_list_params(request: Request) -> TaskListParams:
+    try:
+        return task_list_params_from_query(request.query_params)
+    except ValidationError as exc:
+        raise RequestValidationError(exc.errors()) from exc
 
 
 @asynccontextmanager
@@ -26,14 +39,47 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request) -> HTMLResponse:
-    tasks = repo.list_all()
-    return templates.TemplateResponse(request, "index.html", {"tasks": tasks})
+def index(
+    request: Request,
+    params: Annotated[TaskListParams, Depends(get_task_list_params)],
+) -> HTMLResponse:
+    tasks = repo.list_filtered(params)
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "tasks": tasks,
+            "today": today_app(),
+            "filters": params,
+        },
+    )
 
 
 @app.post("/ui/tasks")
-def ui_create_task(title: str = Form(...), description: str = Form("")) -> RedirectResponse:
-    repo.create(TaskCreate(title=title, description=description or None))
+def ui_create_task(
+    title: str = Form(...),
+    description: str = Form(""),
+    prioridad: Prioridad = Form(Prioridad.media),
+    fecha_limite: str = Form(""),
+) -> RedirectResponse:
+    parsed_fecha: date | None = None
+    if fecha_limite.strip():
+        try:
+            parsed_fecha = date.fromisoformat(fecha_limite.strip())
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="fecha_limite debe tener formato YYYY-MM-DD",
+            ) from exc
+
+    repo.create(
+        TaskCreate(
+            title=title,
+            description=description or None,
+            prioridad=prioridad,
+            fecha_limite=parsed_fecha,
+        )
+    )
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -58,8 +104,8 @@ def create_task(payload: TaskCreate) -> Task:
 
 
 @app.get("/tasks", response_model=list[Task])
-def list_tasks() -> list[Task]:
-    return repo.list_all()
+def list_tasks(params: Annotated[TaskListParams, Depends(get_task_list_params)]) -> list[Task]:
+    return repo.list_filtered(params)
 
 
 @app.get("/tasks/{task_id}", response_model=Task)
