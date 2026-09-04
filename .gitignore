@@ -32,16 +32,17 @@ htmlcov/
 *.sqlite3
 
 # IDE / editores
-.vscode/*
-!.vscode/mcp.json
+.vscode/
 .idea/
 *.swp
 *.swo
 
-# Cursor
-.cursor/*
-!.cursor/mcp.json
-!.cursor/skills/
+# Claude Code
+# La config del proyecto (.mcp.json, .claude/skills/, CLAUDE.md) SI se commitea:
+# es parte del material del curso y tiene que viajar con el repo.
+# settings.local.json no: son los permisos de cada uno, y es donde se filtran
+# credenciales sin querer.
+.claude/settings.local.json
 
 # SO
 .DS_Store

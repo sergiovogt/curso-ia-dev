@@ -1,6 +1,6 @@
 # Ejemplo de reporte — main.py
 
-Contexto: revisión de `intermedio/app/main.py` antes de aplicar mejoras.
+Contexto: revisión de `avanzado/app/main.py` antes de aplicar mejoras.
 
 ---
 

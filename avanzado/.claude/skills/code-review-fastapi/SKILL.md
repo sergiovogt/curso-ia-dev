@@ -1,14 +1,14 @@
 ---
 name: code-review-fastapi
-description: Code review de endpoints FastAPI del módulo intermedio según las convenciones del equipo.
+description: Code review de endpoints FastAPI del módulo avanzado según las convenciones del equipo.
 ---
 
-# Code Review FastAPI — Intermedio
+# Code Review FastAPI — Avanzado
 
 Cuando el usuario pida review de la API:
 
-1. Leer el archivo indicado (por defecto `intermedio/app/main.py`).
-2. Evaluar cada punto contra las convenciones en `intermedio/docs/CODING_STANDARDS.md`.
+1. Leer el archivo indicado (por defecto `avanzado/app/main.py`).
+2. Evaluar cada punto contra las convenciones en `avanzado/docs/CODING_STANDARDS.md`.
 3. Reportar en este formato exacto:
 
 ---
@@ -27,4 +27,4 @@ Cuando el usuario pida review de la API:
 ---
 
 4. No modificar el código salvo que el usuario lo pida explícitamente.
-5. Si el usuario no indica un archivo, asumir `intermedio/app/main.py`.
+5. Si el usuario no indica un archivo, asumir `avanzado/app/main.py`.

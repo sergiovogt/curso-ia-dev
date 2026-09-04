@@ -1,4 +1,0 @@
-stack: FastAPI + Pydantic v2
-type hints
-estilo de errores con HTTPException
-español en mensajes

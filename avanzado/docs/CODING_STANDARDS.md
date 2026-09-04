@@ -1,4 +1,4 @@
-# Convenciones de Code Review — API FastAPI (intermedio)
+# Convenciones de Code Review — API FastAPI (avanzado)
 
 ## Arquitectura
 - Las rutas no acceden directamente a repositorios globales.
