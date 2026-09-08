@@ -42,7 +42,11 @@ htmlcov/
 # es parte del material del curso y tiene que viajar con el repo.
 # settings.local.json no: son los permisos de cada uno, y es donde se filtran
 # credenciales sin querer.
-.claude/settings.local.json
+#
+# Va con **/ al principio: un patron con una barra en el medio es relativo a la
+# carpeta de este .gitignore, asi que ".claude/settings.local.json" a secas solo
+# tapaba el de la raiz y dejaba pasar los de inicial/, intermedio/ y avanzado/.
+**/.claude/settings.local.json
 
 # SO
 .DS_Store
