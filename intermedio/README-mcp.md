@@ -25,7 +25,7 @@ tarda más.
 
 ```bash
 docker pull ghcr.io/github/github-mcp-server:v1.12.0
-docker pull qdrant/qdrant
+docker pull qdrant/qdrant:v1.19.1
 ```
 
 ---
@@ -33,11 +33,14 @@ docker pull qdrant/qdrant
 ## Paso 2 — Levantar Qdrant
 
 ```bash
-docker run -p 6333:6333 qdrant/qdrant
+docker run -d --name curso-qdrant -p 6333:6333 qdrant/qdrant:v1.19.1
 ```
 
 Verificar que responde: abrir `http://localhost:6333/dashboard` en el browser.
-Dejarlo corriendo en su propia terminal.
+Corre en segundo plano, así que la terminal queda libre. Para apagarlo al
+terminar: `docker stop curso-qdrant`, y `docker rm curso-qdrant` si se quiere
+empezar de cero. Está pineado a `v1.19.1` a propósito: `latest` puede cambiar
+de un día para el otro y una demo no se apoya en eso.
 
 El de GitHub **no hay que levantarlo a mano**: Claude Code corre el contenedor
 solo, uno por sesión, y lo apaga al cerrar (`--rm`).
