@@ -25,15 +25,6 @@ Las convenciones completas —las que usa la skill de review— están en
 [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md). Este archivo es el
 resumen; ante una diferencia, manda el de `docs/`.
 
-## Spec-Driven Development
-
-Este nivel es la base del flujo **spec → plan → tasks**. Los esqueletos de los
-tres artefactos están en `templates/`: se copian y se completan para cada
-feature nueva, con revisión humana en cada paso.
-
-**No implementar una feature sin su spec.** Si el pedido llega directo al
-código, lo primero es escribir la spec y que la aprueben.
-
 ## Qué hay en esta carpeta
 
 | Ruta | Qué es |
