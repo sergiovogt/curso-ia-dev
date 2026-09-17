@@ -2,7 +2,7 @@ from pydantic import BaseModel, BeforeValidator, Field, field_validator
 from datetime import date, datetime
 from enum import StrEnum
 import re
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 
 class Priority(StrEnum):
@@ -56,6 +56,7 @@ class TaskUpdate(BaseModel):
 class TaskFilters(BaseModel):
     priority: Priority | None = None
     completed: bool | None = None
+    sort: Literal["priority"] | None = None
 
     # Un <select> con la opción "todas" manda ?priority= vacío: es sin filtro.
     @field_validator("*", mode="before")

@@ -5,6 +5,14 @@ from app.database import get_connection
 from app.schemas import Priority, Task, TaskCreate, TaskFilters, TaskUpdate
 
 
+# Cerrado: el ORDER BY sale de acá, nunca del request. Por texto, priority
+# ordenaría alta → baja → media; el CASE da alta → media → baja.
+_ORDER_BY: dict[str | None, str] = {
+    None: "id",
+    "priority": "CASE priority WHEN 'alta' THEN 0 WHEN 'media' THEN 1 ELSE 2 END, id",
+}
+
+
 def _date_to_text(value: date | None) -> str | None:
     return value.isoformat() if value is not None else None
 
@@ -60,10 +68,11 @@ class TaskRepository:
             clauses.append("completed = ?")
             params.append(int(filters.completed))
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        order_by = _ORDER_BY[filters.sort]
 
         conn = get_connection()
         try:
-            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY id", params).fetchall()
+            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY {order_by}", params).fetchall()
         finally:
             conn.close()
 

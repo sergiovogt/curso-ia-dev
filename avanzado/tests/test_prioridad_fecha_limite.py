@@ -207,12 +207,11 @@ def _ids(response) -> list[int]:
 
 def _crear_mezcla(client: TestClient) -> dict[str, int]:
     """Suma a las 5 sembradas (media; 1 y 5 completadas) tareas alta y baja."""
-    ids = {
+    return {
         "alta_pendiente": _crear(client, priority="alta")["id"],
         "alta_completada": _crear(client, priority="alta", completed=True)["id"],
         "baja_pendiente": _crear(client, priority="baja")["id"],
     }
-    return ids
 
 
 def test_filtro_por_prioridad_incluye_completadas(client: TestClient) -> None:
@@ -246,3 +245,41 @@ def test_filtro_sin_coincidencias_devuelve_lista_vacia(client: TestClient) -> No
 
 def test_filtro_vacio_es_sin_filtro(client: TestClient) -> None:
     assert _ids(client.get("/tasks?priority=&completed=")) == [1, 2, 3, 4, 5]
+
+
+# --- API: orden ---
+
+
+def test_sin_sort_ordena_por_id(client: TestClient) -> None:
+    _crear_mezcla(client)
+
+    ids = _ids(client.get("/tasks"))
+
+    assert ids == sorted(ids)
+
+
+def test_sort_priority_ordena_alta_media_baja_y_desempata_por_id(client: TestClient) -> None:
+    for sembrada in range(1, 6):
+        client.delete(f"/tasks/{sembrada}")
+    baja = _crear(client, priority="baja")["id"]
+    alta_1 = _crear(client, priority="alta")["id"]
+    media = _crear(client, priority="media")["id"]
+    alta_2 = _crear(client, priority="alta")["id"]
+
+    assert _ids(client.get("/tasks?sort=priority")) == [alta_1, alta_2, media, baja]
+
+
+def test_sort_combinado_con_filtros(client: TestClient) -> None:
+    ids = _crear_mezcla(client)
+    media_pendiente = _crear(client, priority="media")["id"]
+
+    assert _ids(client.get("/tasks?sort=priority&priority=media&completed=false")) == [
+        2, 3, 4, media_pendiente
+    ]
+    assert _ids(client.get("/tasks?sort=priority&completed=false")) == [
+        ids["alta_pendiente"], 2, 3, 4, media_pendiente, ids["baja_pendiente"]
+    ]
+
+
+def test_sort_invalido_devuelve_422(client: TestClient) -> None:
+    assert client.get("/tasks?sort=due_date").status_code == 422
