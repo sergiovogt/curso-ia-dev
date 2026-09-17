@@ -2,7 +2,7 @@ import sqlite3
 from datetime import UTC, datetime
 
 from app.database import get_connection
-from app.schemas import Task, TaskCreate, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskUpdate
 
 
 class TaskRepository:
@@ -13,6 +13,7 @@ class TaskRepository:
             description=row["description"],
             completed=bool(row["completed"]),
             created_at=datetime.fromisoformat(row["created_at"]),
+            priority=Priority(row["priority"]),
         )
 
     def create(self, payload: TaskCreate) -> Task:
@@ -23,10 +24,16 @@ class TaskRepository:
         try:
             cursor = conn.execute(
                 """
-                INSERT INTO tasks (title, description, completed, created_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO tasks (title, description, completed, created_at, priority)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (data["title"], data["description"], int(data["completed"]), created_at),
+                (
+                    data["title"],
+                    data["description"],
+                    int(data["completed"]),
+                    created_at,
+                    data["priority"],
+                ),
             )
             conn.commit()
             task_id = cursor.lastrowid
@@ -68,13 +75,14 @@ class TaskRepository:
             conn.execute(
                 """
                 UPDATE tasks
-                SET title = ?, description = ?, completed = ?
+                SET title = ?, description = ?, completed = ?, priority = ?
                 WHERE id = ?
                 """,
                 (
                     updated.title,
                     updated.description,
                     int(updated.completed),
+                    updated.priority,
                     task_id,
                 ),
             )
