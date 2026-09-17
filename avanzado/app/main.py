@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -29,7 +30,9 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
     tasks = repo.list_all()
-    return templates.TemplateResponse(request, "index.html", {"tasks": tasks})
+    return templates.TemplateResponse(
+        request, "index.html", {"tasks": tasks, "today": date.today()}
+    )
 
 
 @app.post("/ui/tasks")

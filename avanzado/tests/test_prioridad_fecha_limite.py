@@ -1,4 +1,6 @@
+import re
 import sqlite3
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -283,3 +285,40 @@ def test_sort_combinado_con_filtros(client: TestClient) -> None:
 
 def test_sort_invalido_devuelve_422(client: TestClient) -> None:
     assert client.get("/tasks?sort=due_date").status_code == 422
+
+
+# --- Página: prioridad, fecha y vencidas ---
+
+
+def _li(html: str, task_id: int) -> str:
+    match = re.search(rf'<li[^>]*data-id="{task_id}".*?</li>', html, re.DOTALL)
+    assert match is not None, f"no está la tarea {task_id} en la página"
+    return match.group(0)
+
+
+def test_pagina_muestra_prioridad_y_fecha(client: TestClient) -> None:
+    con_fecha = _crear(client, priority="alta", due_date="2999-12-31")["id"]
+    sin_fecha = _crear(client, priority="baja")["id"]
+
+    html = client.get("/").text
+
+    assert "alta" in _li(html, con_fecha) and "2999-12-31" in _li(html, con_fecha)
+    assert "baja" in _li(html, sin_fecha) and "Vence" not in _li(html, sin_fecha)
+
+
+def test_pagina_marca_solo_las_pendientes_con_fecha_pasada(client: TestClient) -> None:
+    vencida = _crear(client, due_date="2000-01-01")["id"]
+    no_vencidas = [
+        _crear(client, due_date="2000-01-01", completed=True)["id"],
+        _crear(client, due_date=date.today().isoformat())["id"],
+        _crear(client, due_date="2999-12-31")["id"],
+        _crear(client)["id"],
+    ]
+
+    html = client.get("/").text
+
+    assert "Vencida" in _li(html, vencida)
+    assert "overdue" in _li(html, vencida)
+    for task_id in no_vencidas:
+        assert "Vencida" not in _li(html, task_id)
+        assert "overdue" not in _li(html, task_id)
