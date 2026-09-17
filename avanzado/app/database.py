@@ -25,8 +25,31 @@ def init_db() -> None:
         """
     )
     conn.commit()
+    _migrate(conn)
     _seed_if_empty(conn)
     conn.close()
+
+
+# Columnas agregadas después del esquema original, con su definición. Una base
+# vieja las recibe al arrancar; las filas existentes toman el DEFAULT.
+_ADDED_COLUMNS = {
+    "priority": "TEXT NOT NULL DEFAULT 'media'",
+    "due_date": "TEXT",
+}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Agrega a la tabla tasks las columnas que le falten.
+
+    Idempotente: mira qué columnas ya existen, así que correrla sobre una base
+    ya migrada no hace nada. Cada columna se agrega por separado para que una
+    migración cortada a la mitad se complete en el próximo arranque.
+    """
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
+    for name, definition in _ADDED_COLUMNS.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE tasks ADD COLUMN {name} {definition}")
+    conn.commit()
 
 
 # Tareas de ejemplo. Fechas fijas para que el estado inicial sea reproducible.
