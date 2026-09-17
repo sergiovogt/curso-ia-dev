@@ -28,16 +28,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload    # API en :8000/docs; avanzado sirve además la web en /
 ```
 
-Tests (solo existen en `avanzado/`):
+Tests (solo existen en `intermedio/`):
 
 ```bash
-cd avanzado
-python -m pytest                      # `python -m` es necesario: en main no hay pytest.ini
-python -m pytest tests/test_ui.py     # un archivo
-python -m pytest tests/test_api_tasks.py::test_task_create_defaults   # un test
+cd intermedio
+python -m pytest                      # `python -m` es necesario: no hay pytest.ini
 ```
 
-`inicial/` e `intermedio/` no tienen `pytest` en `requirements.txt` — generarlos es parte del
+`inicial/` y `avanzado/` no tienen tests ni `pytest` en `requirements.txt` — generarlos es parte del
 ejercicio, no una omisión a corregir de oficio.
 
 Para volver al estado inicial de una demo: borrar el `tasks.db` del nivel y reiniciar la app
@@ -63,26 +61,13 @@ en el working tree). Lo que cambia entre esos dos niveles es lo que los rodea: `
 
 ### `avanzado/` — lo que agrega
 
-Es el único nivel con web UI, tests y la feature de la demo de SDD (prioridad + fecha límite):
+Es el único nivel con web UI:
 
 - `app/templates/index.html` — página server-rendered (Jinja2). Rutas `/ui/tasks/...` que hacen
   POST y redirigen con `303` a `/`; conviven con la API JSON en `/tasks`.
-- `app/list_params.py` — `TaskListParams`, un modelo Pydantic que parsea los query params de
-  filtro/orden. **Es el contrato compartido**: `GET /` (HTML) y `GET /tasks` (JSON) lo inyectan por
-  `Depends(get_task_list_params)` y ambos delegan en `repo.list_filtered(params)`. Si agregás un
-  filtro, va acá y no en un handler.
-- `app/dates.py` — `today_app()`, único punto de verdad para "hoy" (offset fijo **UTC-3**). Lo usan
-  el filtro `vencidas`, el badge de la UI y los tests (`freeze_today` lo monkeypatchea). No uses
-  `date.today()`.
-- `app/database.py` — además del `CREATE TABLE`, corre `_migrate_add_priority_and_due_date()`
-  (`ALTER TABLE` idempotente chequeando `PRAGMA table_info`) y `_seed_if_empty()` con 5 tareas de
-  fechas fijas. El seed existe a propósito **sin** las columnas nuevas: son los datos "viejos" que
-  la migración de la demo tiene que contemplar.
-- Inmutabilidad post-creación: `prioridad` y `fecha_limite` **no** están en `TaskUpdate`, que usa
-  `ConfigDict(extra="forbid")` para que un `PUT` que los mande responda 422. Es un criterio de
-  aceptación de la spec, no un descuido.
-- `tests/conftest.py` — fixture `client` que monkeypatchea `app.database.DB_PATH` a un `tmp_path`
-  y limpia la tabla; fixture `freeze_today`.
+- `app/database.py` — además del `CREATE TABLE`, corre `_seed_if_empty()` con 5 tareas de fechas
+  fijas. Para volver al estado inicial, borrar `tasks.db` y reiniciar la app (la base está
+  gitignoreada: `git restore` no la toca).
 
 ## Convenciones
 
