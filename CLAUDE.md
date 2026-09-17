@@ -28,15 +28,17 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload    # API en :8000/docs; avanzado sirve además la web en /
 ```
 
-Tests (solo existen en `intermedio/`):
+Tests (existen en `intermedio/` y `avanzado/`):
 
 ```bash
-cd intermedio
+cd intermedio                         # o avanzado
 python -m pytest                      # `python -m` es necesario: no hay pytest.ini
 ```
 
-`inicial/` y `avanzado/` no tienen tests ni `pytest` en `requirements.txt` — generarlos es parte del
-ejercicio, no una omisión a corregir de oficio.
+`inicial/` no tiene tests ni `pytest` en `requirements.txt` — generarlos es parte del ejercicio, no
+una omisión a corregir de oficio. Los de `avanzado/` llegaron con la feature de prioridad y fecha
+límite (`avanzado/specs/prioridad-y-fecha-limite.md`); para una demo que parta de `avanzado/` sin
+tests, usar un commit anterior a esa feature.
 
 Para volver al estado inicial de una demo: borrar el `tasks.db` del nivel y reiniciar la app
 (`init_db()` recrea el esquema y resiembra si la tabla está vacía). Los `.db` están gitignoreados.

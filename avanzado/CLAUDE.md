@@ -11,7 +11,8 @@ diga sea cierto.
   `app/repository.py`.
 - **Página web server-rendered** con Jinja2 en `app/templates/index.html`.
 - La base arranca sembrada con tareas de ejemplo.
-- Sin tests. Es a propósito: es material de las sesiones.
+- Tests con pytest en `tests/`, sobre una base temporal (no tocan `tasks.db`).
+  Se corren con `python -m pytest` parado en esta carpeta.
 
 ## Convenciones
 
