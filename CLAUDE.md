@@ -100,14 +100,9 @@ tiene instrucción explícita de no modificar código salvo pedido expreso.
 
 Los esqueletos reutilizables son `templates/spec.md`, `templates/plan.md` y `templates/tasks.md`
 (ojo: `avanzado/templates/` es SDD; las plantillas Jinja de la web viven en `avanzado/app/templates/`).
-Se copian y completan por feature, y el resultado va a `specs/`, `plans/` y `tasks/` — la feature de
-referencia es `prioridad-fecha-limite.md` en las tres. Reglas del flujo que importan al ejecutar:
-la spec define **qué** y los criterios de aceptación verificables (no el cómo), el plan se aprueba
-antes de generar tasks, y cada task es un commit verificable por separado.
-
-Ramas de la demo: `demo-a-congelada` (misma feature hecha con vibe coding, sin spec ni tests) y
-`demo-b-referencia` (el flujo SDD completo). Ojo: el README describe `main` como el estado *previo*
-a la feature, pero `main` ya la tiene implementada (commit `cdc91d5`).
+Se copian y completan por feature, y el resultado va a `specs/`, `plans/` y `tasks/`. Reglas del flujo
+que importan al ejecutar: la spec define **qué** y los criterios de aceptación verificables (no el
+cómo), el plan se aprueba antes de generar tasks, y cada task es un commit verificable por separado.
 
 ## MCP
 
