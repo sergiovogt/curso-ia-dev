@@ -195,3 +195,54 @@ def test_completar_no_cambia_prioridad_ni_fecha(client: TestClient) -> None:
         "2026-10-01",
         True,
     )
+
+
+# --- API: filtros ---
+
+
+def _ids(response) -> list[int]:
+    assert response.status_code == 200
+    return [t["id"] for t in response.json()]
+
+
+def _crear_mezcla(client: TestClient) -> dict[str, int]:
+    """Suma a las 5 sembradas (media; 1 y 5 completadas) tareas alta y baja."""
+    ids = {
+        "alta_pendiente": _crear(client, priority="alta")["id"],
+        "alta_completada": _crear(client, priority="alta", completed=True)["id"],
+        "baja_pendiente": _crear(client, priority="baja")["id"],
+    }
+    return ids
+
+
+def test_filtro_por_prioridad_incluye_completadas(client: TestClient) -> None:
+    ids = _crear_mezcla(client)
+
+    assert _ids(client.get("/tasks?priority=alta")) == [ids["alta_pendiente"], ids["alta_completada"]]
+
+
+def test_filtro_por_completada(client: TestClient) -> None:
+    ids = _crear_mezcla(client)
+
+    assert _ids(client.get("/tasks?completed=true")) == [1, 5, ids["alta_completada"]]
+    assert _ids(client.get("/tasks?completed=false")) == [
+        2, 3, 4, ids["alta_pendiente"], ids["baja_pendiente"]
+    ]
+
+
+def test_filtros_combinados(client: TestClient) -> None:
+    ids = _crear_mezcla(client)
+
+    assert _ids(client.get("/tasks?priority=alta&completed=false")) == [ids["alta_pendiente"]]
+
+
+def test_filtro_con_prioridad_invalida_devuelve_422(client: TestClient) -> None:
+    assert client.get("/tasks?priority=urgente").status_code == 422
+
+
+def test_filtro_sin_coincidencias_devuelve_lista_vacia(client: TestClient) -> None:
+    assert _ids(client.get("/tasks?priority=baja")) == []
+
+
+def test_filtro_vacio_es_sin_filtro(client: TestClient) -> None:
+    assert _ids(client.get("/tasks?priority=&completed=")) == [1, 2, 3, 4, 5]

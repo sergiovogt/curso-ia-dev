@@ -2,7 +2,7 @@ import sqlite3
 from datetime import UTC, date, datetime
 
 from app.database import get_connection
-from app.schemas import Priority, Task, TaskCreate, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskFilters, TaskUpdate
 
 
 def _date_to_text(value: date | None) -> str | None:
@@ -49,10 +49,21 @@ class TaskRepository:
 
         return self._row_to_task(row)
 
-    def list_all(self) -> list[Task]:
+    def list_all(self, filters: TaskFilters | None = None) -> list[Task]:
+        filters = filters or TaskFilters()
+        clauses: list[str] = []
+        params: list[str | int] = []
+        if filters.priority is not None:
+            clauses.append("priority = ?")
+            params.append(filters.priority.value)
+        if filters.completed is not None:
+            clauses.append("completed = ?")
+            params.append(int(filters.completed))
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
         conn = get_connection()
         try:
-            rows = conn.execute("SELECT * FROM tasks ORDER BY id").fetchall()
+            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY id", params).fetchall()
         finally:
             conn.close()
 

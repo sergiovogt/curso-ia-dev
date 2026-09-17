@@ -53,6 +53,17 @@ class TaskUpdate(BaseModel):
         return value
 
 
+class TaskFilters(BaseModel):
+    priority: Priority | None = None
+    completed: bool | None = None
+
+    # Un <select> con la opción "todas" manda ?priority= vacío: es sin filtro.
+    @field_validator("*", mode="before")
+    @classmethod
+    def _empty_as_none(cls, value: Any) -> Any:
+        return None if value == "" else value
+
+
 class Task(BaseModel):
     id: int
     title: str
