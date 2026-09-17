@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.repository import TaskRepository
-from app.schemas import Task, TaskCreate, TaskFilters, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskFilters, TaskUpdate
 
 repo = TaskRepository()
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
@@ -33,8 +33,16 @@ def index(request: Request) -> HTMLResponse:
 
 
 @app.post("/ui/tasks")
-def ui_create_task(title: str = Form(...), description: str = Form("")) -> RedirectResponse:
-    repo.create(TaskCreate(title=title, description=description or None))
+def ui_create_task(
+    title: str = Form(...),
+    description: str = Form(""),
+    priority: Priority = Form(Priority.MEDIA),
+    due_date: str = Form(""),
+) -> RedirectResponse:
+    # Un <input type="date"> vacío llega como "": se guarda sin fecha.
+    repo.create(
+        TaskCreate(title=title, description=description or None, priority=priority, due_date=due_date or None)
+    )
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 

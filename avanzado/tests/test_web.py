@@ -44,3 +44,35 @@ def test_completar_y_borrar_desde_la_pagina_siguen_funcionando(client: TestClien
     borrar = client.post(f"/ui/tasks/{task_id}/delete", follow_redirects=False)
     assert borrar.status_code == 303
     assert client.get(f"/tasks/{task_id}").status_code == 404
+
+
+def test_formulario_de_alta_preselecciona_media(client: TestClient) -> None:
+    assert '<option value="media" selected>' in client.get("/").text
+
+
+def test_alta_desde_la_pagina_con_prioridad_y_fecha(client: TestClient) -> None:
+    response = client.post(
+        "/ui/tasks",
+        data={"title": "Con fecha", "description": "", "priority": "alta", "due_date": "2026-12-31"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    item = _items(client.get("/").text)["Con fecha"]
+    assert "Prioridad: alta" in item
+    assert "Vence: 2026-12-31" in item
+
+
+def test_alta_desde_la_pagina_sin_fecha_la_guarda_nula(client: TestClient) -> None:
+    client.post("/ui/tasks", data={"title": "Sin fecha", "priority": "baja", "due_date": ""})
+
+    [task] = client.get("/tasks").json()
+    assert task["due_date"] is None
+    assert task["priority"] == "baja"
+
+
+def test_alta_desde_la_pagina_sin_prioridad_queda_en_media(client: TestClient) -> None:
+    client.post("/ui/tasks", data={"title": "Sin prioridad"})
+
+    [task] = client.get("/tasks").json()
+    assert task["priority"] == "media"
