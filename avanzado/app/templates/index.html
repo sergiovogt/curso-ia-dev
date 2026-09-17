@@ -21,6 +21,12 @@
     li.done .title { text-decoration: line-through; color: #999; }
     li .desc { font-size: .9rem; color: #555; margin-top: .15rem; }
     li .meta { font-size: .78rem; color: #999; margin-top: .25rem; }
+    li .priority { font-weight: 600; }
+    li .priority-alta { color: #b42318; }
+    li .priority-media { color: #b54708; }
+    li .priority-baja { color: #667085; }
+    li.overdue { background: #fef3f2; border-left: 3px solid #d92d20; padding-left: .6rem; }
+    li.overdue .due, li .overdue-label { color: #b42318; font-weight: 600; }
     .empty { color: #999; font-style: italic; padding: 1rem 0; }
     .inline { display: inline; }
   </style>
@@ -37,11 +43,16 @@
   {% if tasks %}
   <ul>
     {% for t in tasks %}
-    <li class="{{ 'done' if t.completed else '' }}">
+    <li class="{{ 'done' if t.completed else ('overdue' if t.is_overdue else '') }}">
       <div class="body">
         <div class="title">{{ t.title }}</div>
         {% if t.description %}<div class="desc">{{ t.description }}</div>{% endif %}
-        <div class="meta">Creada: {{ t.created_at.strftime('%Y-%m-%d') }}</div>
+        <div class="meta">
+          <span class="priority priority-{{ t.priority.value }}">Prioridad: {{ t.priority.value }}</span>
+          · Creada: {{ t.created_at.strftime('%Y-%m-%d') }}
+          {% if t.due_date %}· <span class="due">Vence: {{ t.due_date.isoformat() }}</span>{% endif %}
+          {% if t.is_overdue %}· <span class="overdue-label">Vencida</span>{% endif %}
+        </div>
       </div>
       {% if not t.completed %}
       <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/complete">

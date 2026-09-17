@@ -54,3 +54,8 @@ class Task(BaseModel):
     created_at: datetime
     priority: Priority
     due_date: date | None
+
+    @property
+    def is_overdue(self) -> bool:
+        # Misma regla que el filtro overdue del repositorio. Property común: no se serializa.
+        return not self.completed and self.due_date is not None and self.due_date < date.today()
