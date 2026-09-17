@@ -150,3 +150,39 @@ def test_filtrar_combina_prioridad_y_vencidas(client: TestClient, sample_tasks: 
 
 def test_filtrar_vencidas_y_completadas_devuelve_lista_vacia(client: TestClient, sample_tasks: dict) -> None:
     assert _titles(client.get("/tasks?overdue=true&completed=true")) == []
+
+
+def test_ordenar_por_prioridad_desempata_por_id(client: TestClient, sample_tasks: dict) -> None:
+    assert _titles(client.get("/tasks?sort_by=priority")) == [
+        "vencida",
+        "futura",
+        "completada_vencida",
+        "vence_hoy",
+        "sin_fecha",
+    ]
+
+
+def test_ordenar_por_fecha_limite_deja_las_sin_fecha_al_final(client: TestClient, sample_tasks: dict) -> None:
+    client.post("/tasks", json={"title": "sin_fecha_2"})
+
+    assert _titles(client.get("/tasks?sort_by=due_date")) == [
+        "vencida",
+        "completada_vencida",
+        "vence_hoy",
+        "futura",
+        "sin_fecha",
+        "sin_fecha_2",
+    ]
+
+
+def test_ordenar_por_campo_invalido_devuelve_422(client: TestClient) -> None:
+    assert client.get("/tasks?sort_by=titulo").status_code == 422
+
+
+def test_filtro_y_orden_se_combinan(client: TestClient, sample_tasks: dict) -> None:
+    assert _titles(client.get("/tasks?completed=false&sort_by=due_date")) == [
+        "vencida",
+        "vence_hoy",
+        "futura",
+        "sin_fecha",
+    ]

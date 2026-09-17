@@ -2,7 +2,15 @@ import sqlite3
 from datetime import UTC, date, datetime
 
 from app.database import get_connection
-from app.schemas import Priority, Task, TaskCreate, TaskFilters, TaskUpdate
+from app.schemas import Priority, SortBy, Task, TaskCreate, TaskFilters, TaskUpdate
+
+
+# Fragmentos fijos de ORDER BY: el input del usuario solo elige la clave, nunca entra al SQL.
+_ORDER_BY = {
+    None: "id",
+    SortBy.PRIORITY: "CASE priority WHEN 'alta' THEN 0 WHEN 'media' THEN 1 ELSE 2 END, id",
+    SortBy.DUE_DATE: "due_date IS NULL, due_date, id",
+}
 
 
 def _date_to_db(value: date | None) -> str | None:
@@ -64,10 +72,11 @@ class TaskRepository:
                 conditions.append("completed = 0 AND due_date IS NOT NULL AND due_date < ?")
                 params.append(date.today().isoformat())
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        order_by = _ORDER_BY[filters.sort_by if filters is not None else None]
 
         conn = get_connection()
         try:
-            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY id", params).fetchall()
+            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY {order_by}", params).fetchall()
         finally:
             conn.close()
 

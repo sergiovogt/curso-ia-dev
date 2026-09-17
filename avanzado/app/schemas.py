@@ -34,10 +34,16 @@ class TaskUpdate(BaseModel):
         return value
 
 
+class SortBy(StrEnum):
+    PRIORITY = "priority"
+    DUE_DATE = "due_date"
+
+
 class TaskFilters(BaseModel):
     priority: Priority | None = None
     completed: bool | None = None
     overdue: bool = False
+    sort_by: SortBy | None = None
 
 
 class Task(BaseModel):
