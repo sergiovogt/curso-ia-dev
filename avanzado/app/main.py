@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.repository import TaskRepository
-from app.schemas import Task, TaskCreate, TaskFilters, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskFilters, TaskUpdate
 
 repo = TaskRepository()
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
@@ -31,13 +31,39 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 def index(request: Request) -> HTMLResponse:
     tasks = repo.list_all()
     return templates.TemplateResponse(
-        request, "index.html", {"tasks": tasks, "today": date.today()}
+        request, "index.html", {"tasks": tasks, "today": date.today(), "priorities": list(Priority)}
     )
 
 
+def _parse_due_date(value: str) -> date | None:
+    # Form vacío = sin fecha. Declarar el campo como date haría que el vacío,
+    # el caso normal del form, diera 422.
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Fecha límite inválida: usar el formato AAAA-MM-DD",
+        ) from None
+
+
 @app.post("/ui/tasks")
-def ui_create_task(title: str = Form(...), description: str = Form("")) -> RedirectResponse:
-    repo.create(TaskCreate(title=title, description=description or None))
+def ui_create_task(
+    title: str = Form(...),
+    description: str = Form(""),
+    priority: Priority = Form(Priority.MEDIA),
+    due_date: str = Form(""),
+) -> RedirectResponse:
+    repo.create(
+        TaskCreate(
+            title=title,
+            description=description or None,
+            priority=priority,
+            due_date=_parse_due_date(due_date),
+        )
+    )
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 

@@ -322,3 +322,52 @@ def test_pagina_marca_solo_las_pendientes_con_fecha_pasada(client: TestClient) -
     for task_id in no_vencidas:
         assert "Vencida" not in _li(html, task_id)
         assert "overdue" not in _li(html, task_id)
+
+
+# --- Página: alta con prioridad y fecha ---
+
+
+def _ultima(client: TestClient) -> dict:
+    return client.get("/tasks").json()[-1]
+
+
+def test_alta_desde_la_pagina_con_prioridad_y_fecha(client: TestClient) -> None:
+    response = client.post(
+        "/ui/tasks",
+        data={"title": "Desde la web", "priority": "alta", "due_date": "2026-10-01"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    creada = client.get(f"/tasks/{_ultima(client)['id']}").json()
+    assert (creada["title"], creada["priority"], creada["due_date"]) == (
+        "Desde la web",
+        "alta",
+        "2026-10-01",
+    )
+
+
+def test_alta_desde_la_pagina_con_fecha_vacia(client: TestClient) -> None:
+    client.post("/ui/tasks", data={"title": "Sin fecha", "priority": "baja", "due_date": ""})
+
+    assert _ultima(client)["due_date"] is None
+
+
+def test_alta_desde_la_pagina_sin_prioridad_queda_en_media(client: TestClient) -> None:
+    client.post("/ui/tasks", data={"title": "Sin prioridad"})
+
+    assert _ultima(client)["priority"] == "media"
+
+
+def test_alta_desde_la_pagina_con_fecha_invalida_devuelve_422(client: TestClient) -> None:
+    response = client.post("/ui/tasks", data={"title": "Mal", "due_date": "01/10/2026"})
+
+    assert response.status_code == 422
+    assert len(client.get("/tasks").json()) == 5
+
+
+def test_form_de_alta_tiene_prioridad_con_media_preseleccionada(client: TestClient) -> None:
+    html = client.get("/").text
+
+    assert '<option value="media" selected>' in html
+    assert 'type="date" name="due_date"' in html
