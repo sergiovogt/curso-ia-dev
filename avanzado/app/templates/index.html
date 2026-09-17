@@ -8,10 +8,13 @@
     :root { font-family: system-ui, -apple-system, sans-serif; }
     body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
     h1 { font-size: 1.5rem; margin-bottom: 1.25rem; }
-    form.add { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
-    form.add input[type=text] { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font-size: .95rem; }
-    form.add input[name=title] { flex: 2; }
-    form.add input[name=description] { flex: 3; }
+    form.add { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+    form.add input, form.add select, form.filters select { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; font-size: .95rem; background: #fff; }
+    form.add input[name=title] { flex: 2 1 12rem; }
+    form.add input[name=description] { flex: 3 1 16rem; }
+    form.filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-bottom: 1rem; padding: .75rem; background: #fafafa; border: 1px solid #eee; border-radius: 8px; }
+    form.filters label { display: flex; flex-direction: column; gap: .2rem; font-size: .78rem; color: #666; }
+    form.filters a { font-size: .85rem; color: #666; align-self: center; }
     button { padding: .5rem .75rem; border: 1px solid #ccc; border-radius: 6px; background: #f5f5f5; cursor: pointer; font-size: .85rem; }
     button:hover { background: #ececec; }
     ul { list-style: none; padding: 0; margin: 0; }
@@ -20,7 +23,12 @@
     li .title { font-weight: 600; }
     li.done .title { text-decoration: line-through; color: #999; }
     li .desc { font-size: .9rem; color: #555; margin-top: .15rem; }
-    li .meta { font-size: .78rem; color: #999; margin-top: .25rem; }
+    li .meta { font-size: .78rem; color: #999; margin-top: .25rem; display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+    .badge { display: inline-block; padding: .05rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
+    .prio-alta { background: #fde2e1; color: #b42318; }
+    .prio-media { background: #fef0c7; color: #93370d; }
+    .prio-baja { background: #e6f4ea; color: #1e6b34; }
+    .overdue { color: #b42318; font-weight: 600; }
     .empty { color: #999; font-style: italic; padding: 1rem 0; }
     .inline { display: inline; }
   </style>
@@ -31,7 +39,40 @@
   <form class="add" method="post" action="/ui/tasks">
     <input type="text" name="title" placeholder="Nueva tarea..." required>
     <input type="text" name="description" placeholder="Descripción (opcional)">
+    <select name="priority" aria-label="Prioridad">
+      {% for p in priorities %}
+      <option value="{{ p.value }}" {{ 'selected' if p.value == 'media' else '' }}>Prioridad {{ p.value }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="due_date" aria-label="Fecha límite" title="Fecha límite (opcional)">
     <button type="submit">Agregar</button>
+  </form>
+
+  <form class="filters" method="get" action="/">
+    <label>Prioridad
+      <select name="prioridad">
+        <option value="">Todas</option>
+        {% for p in priorities %}
+        <option value="{{ p.value }}" {{ 'selected' if filters.prioridad == p.value else '' }}>{{ p.value | capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Vencimiento
+      <select name="vencimiento">
+        {% for value, label in [('', 'Todas'), ('vencidas', 'Vencidas'), ('proximas', 'Próximos 7 días'), ('sin_fecha', 'Sin fecha límite')] %}
+        <option value="{{ value }}" {{ 'selected' if filters.vencimiento == value else '' }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Ordenar por
+      <select name="orden">
+        {% for value, label in [('', 'Creación'), ('prioridad', 'Prioridad'), ('fecha_limite', 'Fecha límite')] %}
+        <option value="{{ value }}" {{ 'selected' if filters.orden == value else '' }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Aplicar</button>
+    {% if filters.prioridad or filters.vencimiento or filters.orden %}<a href="/">Limpiar</a>{% endif %}
   </form>
 
   {% if tasks %}
@@ -41,7 +82,15 @@
       <div class="body">
         <div class="title">{{ t.title }}</div>
         {% if t.description %}<div class="desc">{{ t.description }}</div>{% endif %}
-        <div class="meta">Creada: {{ t.created_at.strftime('%Y-%m-%d') }}</div>
+        <div class="meta">
+          <span class="badge prio-{{ t.priority.value }}">{{ t.priority.value }}</span>
+          {% if t.due_date %}
+          <span class="{{ 'overdue' if t.due_date < today and not t.completed else '' }}">
+            Vence: {{ t.due_date.strftime('%Y-%m-%d') }}{% if t.due_date < today and not t.completed %} (vencida){% endif %}
+          </span>
+          {% endif %}
+          <span>Creada: {{ t.created_at.strftime('%Y-%m-%d') }}</span>
+        </div>
       </div>
       {% if not t.completed %}
       <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/complete">
@@ -55,7 +104,7 @@
     {% endfor %}
   </ul>
   {% else %}
-  <p class="empty">No hay tareas todavía.</p>
+  <p class="empty">{{ 'No hay tareas que coincidan con los filtros.' if filters.prioridad or filters.vencimiento else 'No hay tareas todavía.' }}</p>
   {% endif %}
 </body>
 </html>

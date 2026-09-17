@@ -1,8 +1,15 @@
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from app.database import get_connection
-from app.schemas import Task, TaskCreate, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskUpdate
+
+
+# Claves de orden permitidas -> cláusula ORDER BY. Nunca se interpola el valor del usuario.
+_ORDER_BY: dict[str, str] = {
+    "prioridad": "CASE priority WHEN 'alta' THEN 0 WHEN 'media' THEN 1 ELSE 2 END, due_date IS NULL, due_date, id",
+    "fecha_limite": "due_date IS NULL, due_date, id",
+}
 
 
 class TaskRepository:
@@ -12,6 +19,8 @@ class TaskRepository:
             title=row["title"],
             description=row["description"],
             completed=bool(row["completed"]),
+            priority=Priority(row["priority"]),
+            due_date=date.fromisoformat(row["due_date"]) if row["due_date"] else None,
             created_at=datetime.fromisoformat(row["created_at"]),
         )
 
@@ -23,10 +32,17 @@ class TaskRepository:
         try:
             cursor = conn.execute(
                 """
-                INSERT INTO tasks (title, description, completed, created_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO tasks (title, description, completed, priority, due_date, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (data["title"], data["description"], int(data["completed"]), created_at),
+                (
+                    data["title"],
+                    data["description"],
+                    int(data["completed"]),
+                    data["priority"].value,
+                    data["due_date"].isoformat() if data["due_date"] else None,
+                    created_at,
+                ),
             )
             conn.commit()
             task_id = cursor.lastrowid
@@ -40,6 +56,46 @@ class TaskRepository:
         conn = get_connection()
         try:
             rows = conn.execute("SELECT * FROM tasks ORDER BY id").fetchall()
+        finally:
+            conn.close()
+
+        return [self._row_to_task(row) for row in rows]
+
+    def list_filtered(
+        self,
+        priority: Priority | None = None,
+        due: str | None = None,
+        sort: str | None = None,
+        today: date | None = None,
+    ) -> list[Task]:
+        """Lista tareas filtradas por prioridad y vencimiento, en el orden pedido.
+
+        `due`: "vencidas" (fecha límite pasada y sin completar), "proximas" (vencen
+        entre hoy y 7 días) o "sin_fecha". `sort`: "prioridad" o "fecha_limite";
+        cualquier otro valor ordena por creación.
+        """
+        today = today or date.today()
+        conditions: list[str] = []
+        params: list[str] = []
+
+        if priority is not None:
+            conditions.append("priority = ?")
+            params.append(priority.value)
+        if due == "vencidas":
+            conditions.append("due_date < ? AND completed = 0")
+            params.append(today.isoformat())
+        elif due == "proximas":
+            conditions.append("due_date BETWEEN ? AND ?")
+            params.extend([today.isoformat(), (today + timedelta(days=7)).isoformat()])
+        elif due == "sin_fecha":
+            conditions.append("due_date IS NULL")
+
+        order_by = _ORDER_BY.get(sort or "", "id")
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        conn = get_connection()
+        try:
+            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY {order_by}", params).fetchall()
         finally:
             conn.close()
 
@@ -68,13 +124,15 @@ class TaskRepository:
             conn.execute(
                 """
                 UPDATE tasks
-                SET title = ?, description = ?, completed = ?
+                SET title = ?, description = ?, completed = ?, priority = ?, due_date = ?
                 WHERE id = ?
                 """,
                 (
                     updated.title,
                     updated.description,
                     int(updated.completed),
+                    updated.priority.value,
+                    updated.due_date.isoformat() if updated.due_date else None,
                     task_id,
                 ),
             )

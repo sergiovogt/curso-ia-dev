@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Request, status
@@ -7,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.repository import TaskRepository
-from app.schemas import Task, TaskCreate, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskUpdate
 
 repo = TaskRepository()
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
@@ -26,14 +27,45 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request) -> HTMLResponse:
-    tasks = repo.list_all()
-    return templates.TemplateResponse(request, "index.html", {"tasks": tasks})
+def index(request: Request, prioridad: str = "", vencimiento: str = "", orden: str = "") -> HTMLResponse:
+    # Valores vacíos o desconocidos en los filtros se ignoran en lugar de dar 422.
+    priority = Priority(prioridad) if prioridad in Priority.__members__ else None
+    today = date.today()
+    tasks = repo.list_filtered(priority=priority, due=vencimiento, sort=orden, today=today)
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "tasks": tasks,
+            "today": today,
+            "priorities": list(Priority),
+            "filters": {"prioridad": prioridad, "vencimiento": vencimiento, "orden": orden},
+        },
+    )
 
 
 @app.post("/ui/tasks")
-def ui_create_task(title: str = Form(...), description: str = Form("")) -> RedirectResponse:
-    repo.create(TaskCreate(title=title, description=description or None))
+def ui_create_task(
+    title: str = Form(...),
+    description: str = Form(""),
+    priority: Priority = Form(Priority.media),
+    due_date: str = Form(""),
+) -> RedirectResponse:
+    try:
+        parsed_due_date = date.fromisoformat(due_date) if due_date else None
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Fecha límite inválida: {due_date}",
+        )
+    repo.create(
+        TaskCreate(
+            title=title,
+            description=description or None,
+            priority=priority,
+            due_date=parsed_due_date,
+        )
+    )
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
