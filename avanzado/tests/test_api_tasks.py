@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -58,3 +60,61 @@ def test_complete_task_incluye_la_prioridad(client: TestClient) -> None:
     response = client.patch(f"/tasks/{creada['id']}/complete")
 
     assert response.json()["priority"] == "baja"
+
+
+def test_create_task_sin_fecha_limite_queda_nula(client: TestClient) -> None:
+    response = client.post("/tasks", json={"title": "x"})
+
+    assert response.json()["due_date"] is None
+
+
+def test_create_task_con_fecha_limite_la_persiste(client: TestClient) -> None:
+    response = client.post("/tasks", json={"title": "x", "priority": "alta", "due_date": "2026-12-31"})
+
+    assert response.status_code == 201
+    creada = response.json()
+    assert creada["due_date"] == "2026-12-31"
+    assert client.get(f"/tasks/{creada['id']}").json() == creada
+
+
+def test_create_task_acepta_fecha_limite_pasada(client: TestClient) -> None:
+    ayer = (date.today() - timedelta(days=1)).isoformat()
+
+    response = client.post("/tasks", json={"title": "x", "due_date": ayer})
+
+    assert response.status_code == 201
+    assert response.json()["due_date"] == ayer
+
+
+@pytest.mark.parametrize("due_date", ["31/12/2026", "2026-12-31T10:00:00"])
+def test_create_task_con_fecha_limite_invalida_devuelve_422(client: TestClient, due_date: str) -> None:
+    response = client.post("/tasks", json={"title": "x", "due_date": due_date})
+
+    assert response.status_code == 422
+
+
+def test_update_task_con_fecha_nula_la_borra(client: TestClient) -> None:
+    creada = client.post("/tasks", json={"title": "x", "due_date": "2026-12-31"}).json()
+
+    response = client.put(f"/tasks/{creada['id']}", json={"due_date": None})
+
+    assert response.json()["due_date"] is None
+    assert client.get(f"/tasks/{creada['id']}").json()["due_date"] is None
+
+
+def test_update_task_cambia_solo_la_fecha_limite(client: TestClient) -> None:
+    creada = client.post(
+        "/tasks", json={"title": "x", "description": "d", "completed": True, "priority": "alta"}
+    ).json()
+
+    response = client.put(f"/tasks/{creada['id']}", json={"due_date": "2027-01-15"})
+
+    assert response.json() == {**creada, "due_date": "2027-01-15"}
+
+
+def test_complete_task_incluye_la_fecha_limite(client: TestClient) -> None:
+    creada = client.post("/tasks", json={"title": "x", "due_date": "2026-12-31"}).json()
+
+    response = client.patch(f"/tasks/{creada['id']}/complete")
+
+    assert response.json()["due_date"] == "2026-12-31"

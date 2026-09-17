@@ -1,7 +1,7 @@
 from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
-from datetime import datetime
+from datetime import date, datetime
 
 
 class Priority(StrEnum):
@@ -15,6 +15,7 @@ class TaskCreate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     completed: bool = False
     priority: Priority = Priority.MEDIA
+    due_date: date | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -22,6 +23,7 @@ class TaskUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     completed: bool | None = None
     priority: Priority | None = None
+    due_date: date | None = None
 
     @field_validator("priority")
     @classmethod
@@ -39,3 +41,4 @@ class Task(BaseModel):
     completed: bool
     created_at: datetime
     priority: Priority
+    due_date: date | None

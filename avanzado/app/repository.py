@@ -1,8 +1,12 @@
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from app.database import get_connection
 from app.schemas import Priority, Task, TaskCreate, TaskUpdate
+
+
+def _date_to_db(value: date | None) -> str | None:
+    return value.isoformat() if value is not None else None
 
 
 class TaskRepository:
@@ -14,6 +18,7 @@ class TaskRepository:
             completed=bool(row["completed"]),
             created_at=datetime.fromisoformat(row["created_at"]),
             priority=Priority(row["priority"]),
+            due_date=date.fromisoformat(row["due_date"]) if row["due_date"] else None,
         )
 
     def create(self, payload: TaskCreate) -> Task:
@@ -24,8 +29,8 @@ class TaskRepository:
         try:
             cursor = conn.execute(
                 """
-                INSERT INTO tasks (title, description, completed, created_at, priority)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO tasks (title, description, completed, created_at, priority, due_date)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     data["title"],
@@ -33,6 +38,7 @@ class TaskRepository:
                     int(data["completed"]),
                     created_at,
                     data["priority"],
+                    _date_to_db(payload.due_date),
                 ),
             )
             conn.commit()
@@ -75,7 +81,7 @@ class TaskRepository:
             conn.execute(
                 """
                 UPDATE tasks
-                SET title = ?, description = ?, completed = ?, priority = ?
+                SET title = ?, description = ?, completed = ?, priority = ?, due_date = ?
                 WHERE id = ?
                 """,
                 (
@@ -83,6 +89,7 @@ class TaskRepository:
                     updated.description,
                     int(updated.completed),
                     updated.priority,
+                    _date_to_db(updated.due_date),
                     task_id,
                 ),
             )
