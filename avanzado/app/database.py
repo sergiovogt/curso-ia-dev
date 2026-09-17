@@ -29,9 +29,7 @@ def init_db() -> None:
     conn.close()
 
 
-# Tareas de arranque para la demo de SDD (cap-5). Existen a propósito ANTES de
-# agregar prioridad y fecha límite: son los datos "viejos" que la migración de
-# la feature tiene que contemplar. Fechas fijas para que la demo sea reproducible.
+# Tareas de ejemplo. Fechas fijas para que el estado inicial sea reproducible.
 _SEED_TASKS = [
     ("Configurar el pipeline de CI", "Correr tests en cada push a main", 1, "2026-06-02T09:15:00+00:00"),
     ("Migrar el login a OAuth", "Reemplazar el login por usuario/clave", 0, "2026-06-05T14:30:00+00:00"),
@@ -45,7 +43,7 @@ def _seed_if_empty(conn: sqlite3.Connection) -> None:
     """Siembra tareas de ejemplo solo si la tabla está vacía.
 
     Idempotente: al reiniciar sobre una base ya sembrada no duplica nada. Para
-    volver al estado inicial de la demo, borrar tasks.db y reiniciar la app.
+    volver al estado inicial, borrar tasks.db y reiniciar la app.
     """
     count = conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
     if count > 0:
