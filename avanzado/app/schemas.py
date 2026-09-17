@@ -45,6 +45,16 @@ class TaskFilters(BaseModel):
     overdue: bool = False
     sort_by: SortBy | None = None
 
+    @field_validator("priority", "completed", "sort_by", mode="before")
+    @classmethod
+    def vacio_es_sin_filtro(cls, value: object) -> object:
+        # Las opciones "todas" del form de la página mandan el parámetro vacío.
+        return None if value == "" else value
+
+    @property
+    def is_active(self) -> bool:
+        return self.priority is not None or self.completed is not None or self.overdue
+
 
 class Task(BaseModel):
     id: int

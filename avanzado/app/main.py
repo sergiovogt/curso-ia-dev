@@ -27,9 +27,9 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request) -> HTMLResponse:
-    tasks = repo.list_all()
-    return templates.TemplateResponse(request, "index.html", {"tasks": tasks})
+def index(request: Request, filters: Annotated[TaskFilters, Query()]) -> HTMLResponse:
+    tasks = repo.list_all(filters)
+    return templates.TemplateResponse(request, "index.html", {"tasks": tasks, "filters": filters})
 
 
 @app.post("/ui/tasks")

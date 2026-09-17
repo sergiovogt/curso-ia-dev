@@ -76,3 +76,57 @@ def test_alta_desde_la_pagina_sin_prioridad_queda_en_media(client: TestClient) -
 
     [task] = client.get("/tasks").json()
     assert task["priority"] == "media"
+
+
+def _filters_form(html: str) -> str:
+    return re.search(r'<form class="filters".*?</form>', html, flags=re.DOTALL).group(0)
+
+
+def test_pagina_filtra_igual_que_la_api_y_refleja_los_controles(client: TestClient, sample_tasks: dict) -> None:
+    html = client.get("/?priority=alta&completed=false").text
+
+    esperadas = [t["title"] for t in client.get("/tasks?priority=alta&completed=false").json()]
+    assert list(_items(html)) == esperadas == ["vencida", "futura"]
+    form = _filters_form(html)
+    assert '<option value="alta" selected>' in form
+    assert '<option value="false" selected>' in form
+
+
+def test_pagina_ordena_igual_que_la_api(client: TestClient, sample_tasks: dict) -> None:
+    html = client.get("/?sort_by=due_date").text
+
+    esperadas = [t["title"] for t in client.get("/tasks?sort_by=due_date").json()]
+    assert list(_items(html)) == esperadas
+    assert '<option value="due_date" selected>' in _filters_form(html)
+
+
+def test_pagina_con_opciones_todas_muestra_todas_las_tareas(client: TestClient, sample_tasks: dict) -> None:
+    response = client.get("/?priority=&completed=&sort_by=")
+
+    assert response.status_code == 200
+    assert list(_items(response.text)) == list(sample_tasks)
+
+
+def test_pagina_marca_el_checkbox_de_vencidas(client: TestClient, sample_tasks: dict) -> None:
+    html = client.get("/?overdue=true").text
+
+    assert 'value="true" checked' in _filters_form(html)
+    assert list(_items(html)) == ["vencida"]
+
+
+def test_pagina_sin_coincidencias_muestra_mensaje_propio(client: TestClient, sample_tasks: dict) -> None:
+    html = client.get("/?overdue=true&completed=true").text
+
+    assert "Ninguna tarea coincide con los filtros." in html
+    assert "No hay tareas todavía." not in html
+
+
+def test_pagina_con_base_vacia_sin_filtros_muestra_mensaje_original(client: TestClient) -> None:
+    html = client.get("/").text
+
+    assert "No hay tareas todavía." in html
+    assert "Ninguna tarea coincide" not in html
+
+
+def test_pagina_con_filtro_invalido_devuelve_422(client: TestClient) -> None:
+    assert client.get("/?priority=urgente").status_code == 422
