@@ -1,8 +1,12 @@
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from app.database import get_connection
-from app.schemas import Task, TaskCreate, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskUpdate
+
+
+def _date_to_text(value: date | None) -> str | None:
+    return value.isoformat() if value is not None else None
 
 
 class TaskRepository:
@@ -13,6 +17,8 @@ class TaskRepository:
             description=row["description"],
             completed=bool(row["completed"]),
             created_at=datetime.fromisoformat(row["created_at"]),
+            priority=Priority(row["priority"]),
+            due_date=date.fromisoformat(row["due_date"]) if row["due_date"] else None,
         )
 
     def create(self, payload: TaskCreate) -> Task:
@@ -23,10 +29,17 @@ class TaskRepository:
         try:
             cursor = conn.execute(
                 """
-                INSERT INTO tasks (title, description, completed, created_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO tasks (title, description, completed, created_at, priority, due_date)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (data["title"], data["description"], int(data["completed"]), created_at),
+                (
+                    data["title"],
+                    data["description"],
+                    int(data["completed"]),
+                    created_at,
+                    data["priority"].value,
+                    _date_to_text(data["due_date"]),
+                ),
             )
             conn.commit()
             task_id = cursor.lastrowid
