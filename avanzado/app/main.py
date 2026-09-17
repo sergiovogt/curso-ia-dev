@@ -28,10 +28,18 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request) -> HTMLResponse:
-    tasks = repo.list_all()
+def index(request: Request, filters: Annotated[TaskFilters, Query()]) -> HTMLResponse:
+    tasks = repo.list_all(filters)
     return templates.TemplateResponse(
-        request, "index.html", {"tasks": tasks, "today": date.today(), "priorities": list(Priority)}
+        request,
+        "index.html",
+        {
+            "tasks": tasks,
+            "filters": filters,
+            "filtered": filters.priority is not None or filters.completed is not None,
+            "today": date.today(),
+            "priorities": list(Priority),
+        },
     )
 
 

@@ -371,3 +371,62 @@ def test_form_de_alta_tiene_prioridad_con_media_preseleccionada(client: TestClie
 
     assert '<option value="media" selected>' in html
     assert 'type="date" name="due_date"' in html
+
+
+# --- Página: filtros y orden ---
+
+
+def _ids_en_pagina(html: str) -> list[int]:
+    return [int(task_id) for task_id in re.findall(r'<li[^>]*data-id="(\d+)"', html)]
+
+
+def _form_filtros(html: str) -> str:
+    match = re.search(r'<form class="filters".*?</form>', html, re.DOTALL)
+    assert match is not None
+    return match.group(0)
+
+
+def test_pagina_filtra_y_ordena_igual_que_la_api(client: TestClient) -> None:
+    _crear_mezcla(client)
+    _crear(client, priority="media")
+    query = "priority=alta&completed=false&sort=priority"
+
+    html = client.get(f"/?{query}").text
+
+    assert _ids_en_pagina(html) == _ids(client.get(f"/tasks?{query}"))
+    assert _ids_en_pagina(client.get("/?completed=false&sort=priority").text) == _ids(
+        client.get("/tasks?completed=false&sort=priority")
+    )
+
+
+def test_controles_muestran_los_valores_aplicados(client: TestClient) -> None:
+    form = _form_filtros(client.get("/?priority=alta&completed=false&sort=priority").text)
+
+    assert '<option value="alta" selected>' in form
+    assert '<option value="false" selected>' in form
+    assert '<option value="priority" selected>' in form
+    assert form.count(" selected") == 3
+
+
+def test_controles_en_todas_muestran_todo(client: TestClient) -> None:
+    html = client.get("/?priority=&completed=&sort=").text
+
+    assert _ids_en_pagina(html) == [1, 2, 3, 4, 5]
+    assert " selected" not in _form_filtros(html)
+
+
+def test_filtro_sin_coincidencias_muestra_su_mensaje(client: TestClient) -> None:
+    html = client.get("/?priority=alta").text
+
+    assert "Ninguna tarea coincide con el filtro." in html
+    assert "No hay tareas todavía." not in html
+
+
+def test_sin_tareas_y_sin_filtros_muestra_el_mensaje_de_siempre(client: TestClient) -> None:
+    for sembrada in range(1, 6):
+        client.delete(f"/tasks/{sembrada}")
+
+    html = client.get("/").text
+
+    assert "No hay tareas todavía." in html
+    assert "Ninguna tarea coincide con el filtro." not in html

@@ -28,6 +28,9 @@
     li.overdue { border-left: 3px solid #c62828; padding-left: .6rem; }
     li.overdue .due { color: #c62828; font-weight: 600; }
     .overdue-tag { font-size: .72rem; font-weight: 600; color: #fff; background: #c62828; padding: .1rem .4rem; border-radius: 4px; margin-left: .35rem; vertical-align: middle; }
+    form.filters { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1rem; font-size: .85rem; color: #555; }
+    form.filters label { display: flex; align-items: center; gap: .35rem; }
+    select, input[type=date] { padding: .45rem; border: 1px solid #ccc; border-radius: 6px; font-size: .85rem; background: #fff; }
     .empty { color: #999; font-style: italic; padding: 1rem 0; }
     .inline { display: inline; }
   </style>
@@ -45,6 +48,31 @@
     </select>
     <input type="date" name="due_date" aria-label="Fecha límite (opcional)">
     <button type="submit">Agregar</button>
+  </form>
+
+  <form class="filters" method="get" action="/">
+    <label>Prioridad
+      <select name="priority">
+        <option value="">todas</option>
+        {% for p in priorities %}
+        <option value="{{ p.value }}"{{ ' selected' if filters.priority == p else '' }}>{{ p.value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Estado
+      <select name="completed">
+        <option value="">todas</option>
+        <option value="false"{{ ' selected' if filters.completed is false else '' }}>pendientes</option>
+        <option value="true"{{ ' selected' if filters.completed is true else '' }}>completadas</option>
+      </select>
+    </label>
+    <label>Orden
+      <select name="sort">
+        <option value="">por creación</option>
+        <option value="priority"{{ ' selected' if filters.sort == 'priority' else '' }}>por prioridad</option>
+      </select>
+    </label>
+    <button type="submit">Aplicar</button>
   </form>
 
   {% if tasks %}
@@ -75,6 +103,8 @@
     </li>
     {% endfor %}
   </ul>
+  {% elif filtered %}
+  <p class="empty">Ninguna tarea coincide con el filtro.</p>
   {% else %}
   <p class="empty">No hay tareas todavía.</p>
   {% endif %}
