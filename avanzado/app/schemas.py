@@ -1,4 +1,4 @@
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 from datetime import date, datetime
 from enum import StrEnum
 import re
@@ -40,6 +40,17 @@ class TaskUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=1000)
     completed: bool | None = None
+    priority: Priority | None = None
+    due_date: DueDate | None = None
+
+    # Omitida queda fuera por exclude_unset; mandada en null se rechaza, porque
+    # model_copy no valida y terminaría como NULL en una columna NOT NULL.
+    @field_validator("priority")
+    @classmethod
+    def _priority_not_null(cls, value: Priority | None) -> Priority:
+        if value is None:
+            raise ValueError("La prioridad no puede ser nula")
+        return value
 
 
 class Task(BaseModel):

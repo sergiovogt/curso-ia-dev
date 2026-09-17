@@ -146,3 +146,52 @@ def test_las_tareas_sembradas_salen_en_media_y_sin_fecha(client: TestClient) -> 
     tareas = client.get("/tasks").json()
 
     assert all(t["priority"] == "media" and t["due_date"] is None for t in tareas)
+
+
+# --- API: edición ---
+
+
+def _crear(client: TestClient, **campos: object) -> dict:
+    return client.post("/tasks", json={"title": "Tarea", **campos}).json()
+
+
+def test_put_solo_prioridad_no_cambia_lo_demas(client: TestClient) -> None:
+    creada = _crear(client, description="Detalle", priority="alta", due_date="2026-10-01")
+
+    response = client.put(f"/tasks/{creada['id']}", json={"priority": "baja"})
+
+    assert response.status_code == 200
+    assert client.get(f"/tasks/{creada['id']}").json() == {**creada, "priority": "baja"}
+
+
+def test_put_con_fecha_null_saca_la_fecha(client: TestClient) -> None:
+    creada = _crear(client, due_date="2026-10-01")
+
+    client.put(f"/tasks/{creada['id']}", json={"due_date": None})
+
+    assert client.get(f"/tasks/{creada['id']}").json()["due_date"] is None
+
+
+@pytest.mark.parametrize("priority", [None, "urgente"])
+def test_put_con_prioridad_invalida_devuelve_422_sin_cambios(
+    client: TestClient, priority: str | None
+) -> None:
+    creada = _crear(client, priority="alta")
+
+    response = client.put(f"/tasks/{creada['id']}", json={"priority": priority})
+
+    assert response.status_code == 422
+    assert client.get(f"/tasks/{creada['id']}").json() == creada
+
+
+def test_completar_no_cambia_prioridad_ni_fecha(client: TestClient) -> None:
+    creada = _crear(client, priority="baja", due_date="2026-10-01")
+
+    client.patch(f"/tasks/{creada['id']}/complete")
+
+    guardada = client.get(f"/tasks/{creada['id']}").json()
+    assert (guardada["priority"], guardada["due_date"], guardada["completed"]) == (
+        "baja",
+        "2026-10-01",
+        True,
+    )

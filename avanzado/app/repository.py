@@ -81,13 +81,15 @@ class TaskRepository:
             conn.execute(
                 """
                 UPDATE tasks
-                SET title = ?, description = ?, completed = ?
+                SET title = ?, description = ?, completed = ?, priority = ?, due_date = ?
                 WHERE id = ?
                 """,
                 (
                     updated.title,
                     updated.description,
                     int(updated.completed),
+                    updated.priority.value,
+                    _date_to_text(updated.due_date),
                     task_id,
                 ),
             )
