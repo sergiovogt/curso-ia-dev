@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import FastAPI, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -27,6 +28,22 @@ app = FastAPI(title="CRUD de Tareas", version="1.0.0", lifespan=lifespan)
 # --- UI (páginas server-rendered) ---
 
 
+def _query_string(filters: TaskFilters) -> str:
+    # Orden fijo y booleanos en minúscula: urlencode convertiría True en "True".
+    params = {
+        "priority": filters.priority.value if filters.priority is not None else None,
+        "completed": str(filters.completed).lower() if filters.completed is not None else None,
+        "sort": filters.sort,
+    }
+    return urlencode({key: value for key, value in params.items() if value is not None})
+
+
+def _redirect_to_index(filters: TaskFilters) -> RedirectResponse:
+    query = _query_string(filters)
+    url = f"/?{query}" if query else "/"
+    return RedirectResponse(url, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request, filters: Annotated[TaskFilters, Query()]) -> HTMLResponse:
     tasks = repo.list_all(filters)
@@ -36,6 +53,7 @@ def index(request: Request, filters: Annotated[TaskFilters, Query()]) -> HTMLRes
         {
             "tasks": tasks,
             "filters": filters,
+            "query_string": _query_string(filters),
             "filtered": filters.priority is not None or filters.completed is not None,
             "today": date.today(),
             "priorities": list(Priority),
@@ -59,6 +77,7 @@ def _parse_due_date(value: str) -> date | None:
 
 @app.post("/ui/tasks")
 def ui_create_task(
+    filters: Annotated[TaskFilters, Query()],
     title: str = Form(...),
     description: str = Form(""),
     priority: Priority = Form(Priority.MEDIA),
@@ -72,19 +91,19 @@ def ui_create_task(
             due_date=_parse_due_date(due_date),
         )
     )
-    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return _redirect_to_index(filters)
 
 
 @app.post("/ui/tasks/{task_id}/complete")
-def ui_complete_task(task_id: int) -> RedirectResponse:
+def ui_complete_task(task_id: int, filters: Annotated[TaskFilters, Query()]) -> RedirectResponse:
     repo.mark_complete(task_id)
-    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return _redirect_to_index(filters)
 
 
 @app.post("/ui/tasks/{task_id}/delete")
-def ui_delete_task(task_id: int) -> RedirectResponse:
+def ui_delete_task(task_id: int, filters: Annotated[TaskFilters, Query()]) -> RedirectResponse:
     repo.delete(task_id)
-    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return _redirect_to_index(filters)
 
 
 # --- API JSON ---

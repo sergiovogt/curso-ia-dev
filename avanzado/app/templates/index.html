@@ -38,7 +38,7 @@
 <body>
   <h1>Gestor de Tareas</h1>
 
-  <form class="add" method="post" action="/ui/tasks">
+  <form class="add" method="post" action="/ui/tasks{{ '?' ~ query_string if query_string }}">
     <input type="text" name="title" placeholder="Nueva tarea..." required>
     <input type="text" name="description" placeholder="Descripción (opcional)">
     <select name="priority" aria-label="Prioridad">
@@ -93,11 +93,11 @@
         </div>
       </div>
       {% if not t.completed %}
-      <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/complete">
+      <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/complete{{ '?' ~ query_string if query_string }}">
         <button type="submit">Completar</button>
       </form>
       {% endif %}
-      <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/delete">
+      <form class="inline" method="post" action="/ui/tasks/{{ t.id }}/delete{{ '?' ~ query_string if query_string }}">
         <button type="submit">Borrar</button>
       </form>
     </li>

@@ -430,3 +430,59 @@ def test_sin_tareas_y_sin_filtros_muestra_el_mensaje_de_siempre(client: TestClie
 
     assert "No hay tareas todavía." in html
     assert "Ninguna tarea coincide con el filtro." not in html
+
+
+# --- Página: los filtros se mantienen después de una acción ---
+
+_VISTA = "priority=alta&completed=false&sort=priority"
+
+
+def _acciones(client: TestClient) -> list[tuple[str, dict[str, str]]]:
+    completar = _crear(client, priority="alta")["id"]
+    borrar = _crear(client, priority="alta")["id"]
+    return [
+        ("/ui/tasks", {"title": "Nueva", "priority": "baja", "due_date": ""}),
+        (f"/ui/tasks/{completar}/complete", {}),
+        (f"/ui/tasks/{borrar}/delete", {}),
+    ]
+
+
+def test_acciones_con_filtros_vuelven_a_la_misma_vista(client: TestClient) -> None:
+    for url, data in _acciones(client):
+        response = client.post(f"{url}?{_VISTA}", data=data, follow_redirects=False)
+
+        assert response.status_code == 303, url
+        assert response.headers["location"] == f"/?{_VISTA}", url
+
+
+def test_acciones_sin_filtros_vuelven_a_la_raiz(client: TestClient) -> None:
+    for url, data in _acciones(client):
+        response = client.post(url, data=data, follow_redirects=False)
+
+        assert response.status_code == 303, url
+        assert response.headers["location"] == "/", url
+
+
+def test_la_accion_se_aplica_aunque_lleve_filtros(client: TestClient) -> None:
+    client.post(f"/ui/tasks?{_VISTA}", data={"title": "Con filtros en la URL", "priority": "baja"})
+
+    assert (_ultima(client)["title"], _ultima(client)["priority"]) == ("Con filtros en la URL", "baja")
+
+
+def test_la_pagina_con_filtros_los_pone_en_los_forms(client: TestClient) -> None:
+    task_id = _crear(client, priority="alta")["id"]
+    query_html = _VISTA.replace("&", "&amp;")
+
+    html = client.get(f"/?{_VISTA}").text
+
+    assert f'action="/ui/tasks?{query_html}"' in html
+    assert f'action="/ui/tasks/{task_id}/complete?{query_html}"' in html
+    assert f'action="/ui/tasks/{task_id}/delete?{query_html}"' in html
+
+
+def test_la_pagina_sin_filtros_deja_los_forms_como_antes(client: TestClient) -> None:
+    html = client.get("/").text
+
+    assert 'action="/ui/tasks"' in html
+    assert 'action="/ui/tasks/2/complete"' in html
+    assert 'action="/ui/tasks/1/delete"' in html
