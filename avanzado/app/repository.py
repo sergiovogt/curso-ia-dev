@@ -2,7 +2,7 @@ import sqlite3
 from datetime import UTC, date, datetime
 
 from app.database import get_connection
-from app.schemas import Priority, Task, TaskCreate, TaskUpdate
+from app.schemas import Priority, Task, TaskCreate, TaskFilters, TaskUpdate
 
 
 def _date_to_db(value: date | None) -> str | None:
@@ -49,10 +49,25 @@ class TaskRepository:
 
         return self._row_to_task(row)
 
-    def list_all(self) -> list[Task]:
+    def list_all(self, filters: TaskFilters | None = None) -> list[Task]:
+        conditions: list[str] = []
+        params: list[str | int] = []
+        if filters is not None:
+            if filters.priority is not None:
+                conditions.append("priority = ?")
+                params.append(filters.priority)
+            if filters.completed is not None:
+                conditions.append("completed = ?")
+                params.append(int(filters.completed))
+            if filters.overdue:
+                # "Hoy" es la fecha local del servidor; date('now') de SQLite sería UTC.
+                conditions.append("completed = 0 AND due_date IS NOT NULL AND due_date < ?")
+                params.append(date.today().isoformat())
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
         conn = get_connection()
         try:
-            rows = conn.execute("SELECT * FROM tasks ORDER BY id").fetchall()
+            rows = conn.execute(f"SELECT * FROM tasks {where} ORDER BY id", params).fetchall()
         finally:
             conn.close()
 

@@ -34,6 +34,12 @@ class TaskUpdate(BaseModel):
         return value
 
 
+class TaskFilters(BaseModel):
+    priority: Priority | None = None
+    completed: bool | None = None
+    overdue: bool = False
+
+
 class Task(BaseModel):
     id: int
     title: str

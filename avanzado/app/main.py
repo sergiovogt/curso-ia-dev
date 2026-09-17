@@ -1,13 +1,14 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, Form, HTTPException, Request, status
+from fastapi import FastAPI, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.repository import TaskRepository
-from app.schemas import Task, TaskCreate, TaskUpdate
+from app.schemas import Task, TaskCreate, TaskFilters, TaskUpdate
 
 repo = TaskRepository()
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
@@ -58,8 +59,8 @@ def create_task(payload: TaskCreate) -> Task:
 
 
 @app.get("/tasks", response_model=list[Task])
-def list_tasks() -> list[Task]:
-    return repo.list_all()
+def list_tasks(filters: Annotated[TaskFilters, Query()]) -> list[Task]:
+    return repo.list_all(filters)
 
 
 @app.get("/tasks/{task_id}", response_model=Task)

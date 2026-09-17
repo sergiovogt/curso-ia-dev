@@ -118,3 +118,35 @@ def test_complete_task_incluye_la_fecha_limite(client: TestClient) -> None:
     response = client.patch(f"/tasks/{creada['id']}/complete")
 
     assert response.json()["due_date"] == "2026-12-31"
+
+
+def _titles(response) -> list[str]:
+    assert response.status_code == 200
+    return [t["title"] for t in response.json()]
+
+
+def test_filtrar_por_prioridad_incluye_completadas(client: TestClient, sample_tasks: dict) -> None:
+    assert _titles(client.get("/tasks?priority=alta")) == ["vencida", "futura", "completada_vencida"]
+
+
+def test_filtrar_por_prioridad_invalida_devuelve_422(client: TestClient) -> None:
+    assert client.get("/tasks?priority=urgente").status_code == 422
+
+
+def test_filtrar_por_estado_completada(client: TestClient, sample_tasks: dict) -> None:
+    assert _titles(client.get("/tasks?completed=false")) == ["vencida", "vence_hoy", "futura", "sin_fecha"]
+    assert _titles(client.get("/tasks?completed=true")) == ["completada_vencida"]
+
+
+def test_filtrar_vencidas(client: TestClient, sample_tasks: dict) -> None:
+    assert _titles(client.get("/tasks?overdue=true")) == ["vencida"]
+
+
+def test_filtrar_combina_prioridad_y_vencidas(client: TestClient, sample_tasks: dict) -> None:
+    client.post("/tasks", json={"title": "vencida_baja", "priority": "baja", "due_date": "2000-01-01"})
+
+    assert _titles(client.get("/tasks?priority=alta&overdue=true")) == ["vencida"]
+
+
+def test_filtrar_vencidas_y_completadas_devuelve_lista_vacia(client: TestClient, sample_tasks: dict) -> None:
+    assert _titles(client.get("/tasks?overdue=true&completed=true")) == []
