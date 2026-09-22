@@ -1,0 +1,17 @@
+{
+  "name": "avanzado-e2e",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen http://localhost:8010"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Tests E2E con Playwright del nivel avanzado. La app corre en http://localhost:8010",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
