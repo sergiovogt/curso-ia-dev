@@ -11,8 +11,47 @@ diga sea cierto.
   `app/repository.py`.
 - **Página web server-rendered** con Jinja2 en `app/templates/index.html`.
 - La base arranca sembrada con tareas de ejemplo.
-- Tests con pytest en `tests/`, sobre una base temporal (no tocan `tasks.db`).
-  Se corren con `python -m pytest` parado en esta carpeta.
+- Dos capas de tests: pytest en `tests/` y E2E con Playwright en `e2e/`.
+  Ver [Tests](#tests).
+
+## Tests
+
+**Pytest no alcanza para lo que toca la página.** Son dos capas y cubren cosas
+distintas; una feature de front no está testeada hasta que pasó por las dos.
+
+- **`tests/` (pytest)** — API JSON, repositorio y base. Corren sobre una base
+  temporal, no tocan `tasks.db`:
+
+  ```bash
+  python -m pytest
+  ```
+
+  Parado en esta carpeta, con `python -m` (no hay `pytest.ini`).
+
+- **`e2e/` (Playwright)** — todo lo que sea comportamiento de la página: filtros,
+  orden, marcas visuales, formularios, redirects. Requiere la app levantada
+  aparte en el **8010** (`uvicorn app.main:app --port 8010 --reload`; el 8000
+  suele estar tomado por Docker):
+
+  ```bash
+  cd e2e && npx playwright test
+  ```
+
+  La config está en `headless: false` **a propósito**: en la capacitación el
+  punto es que se vea el navegador abriéndose. No la pases a headless para que
+  "corra más rápido".
+
+Por qué la distinción importa: `tests/test_web.py` verifica el HTML **como
+string**, con `TestClient` y expresiones regulares. Confirma que el markup trae
+`class="overdue"` o `Prioridad: alta`, pero nunca renderiza CSS ni ejecuta un
+navegador. Un estilo que no se aplica, un botón que desborda su contenedor, un
+form que no envía o un `303` que deja la página en un estado raro pasan esos
+tests sin problema. Para eso está `e2e/`.
+
+Regla práctica: si el cambio toca `app/templates/`, los handlers `/ui/` o el
+render de `/`, sumá o corré el test de Playwright correspondiente —y miralo
+abrirse— antes de darlo por terminado. No declares verificada una feature de
+front apoyándote solo en la salida de pytest.
 
 ## Convenciones
 
@@ -33,6 +72,8 @@ resumen; ante una diferencia, manda el de `docs/`.
 | `.claude/skills/code-review-fastapi/` | Skill de review del proyecto, con sus ejemplos |
 | `.mcp.json` | Servidores MCP del nivel: GitHub y Qdrant |
 | `docs/CODING_STANDARDS.md` | La referencia que evalúa la skill |
+| `tests/` | Tests de pytest: API, repositorio y base |
+| `e2e/` | Tests E2E con Playwright: la página en un navegador real |
 | `templates/` | `spec.md`, `plan.md`, `tasks.md` |
 | `README-mcp.md` | Cómo levantar los MCP |
 

@@ -6,7 +6,7 @@ Esta tabla no pregunta *¿los tests pasan?* — pasan: **44 en verde**. Pregunta
 
 ---
 
-## Las tres cosas que puede mirar un test
+## Las cuatro cosas que puede mirar un test
 
 | Dónde mira | Qué prueba de verdad |
 |---|---|
