@@ -1,0 +1,565 @@
+[
+  {
+    "id": "TC001",
+    "title": "Ver la lista sembrada con estados visuales",
+    "description": "Verifica que la página principal muestre las tareas sembradas con sus datos y marque correctamente las tareas completadas y vencidas.",
+    "category": "Listado de tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify seeded tasks are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify completed tasks are shown as completed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify overdue tasks are highlighted as overdue"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Eliminar la última tarea restante",
+    "description": "Verifica que al borrar la última tarea la página muestra el estado vacío.",
+    "category": "Borrar tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the delete action for a visible task"
+      },
+      {
+        "type": "action",
+        "description": "Click the delete action for each remaining visible task one by one until no tasks remain"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no tasks are shown"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Borrar una tarea de la lista",
+    "description": "Verifica que una tarea pueda borrarse desde su fila y desaparezca del listado.",
+    "category": "Listado de tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the delete action for a task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the deleted task is no longer displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Crear una tarea nueva y verla al final",
+    "description": "Verifica que una tarea creada desde el formulario aparezca en la lista después de enviarla.",
+    "category": "Alta de tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the title field with Tarea nueva de prueba"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button to create the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new task is displayed in the task list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Eliminar una tarea de la lista",
+    "description": "Verifica que una tarea se puede borrar desde su fila y desaparece del listado tras la redirección.",
+    "category": "Borrar tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the delete action for one visible task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the deleted task no longer appears in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the remaining task list is still displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Completar una tarea pendiente",
+    "description": "Verifica que una tarea pendiente pueda completarse desde su fila y quede marcada como completada.",
+    "category": "Completar tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the complete action for a pending task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task is shown as completed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the complete action is no longer available for that task"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Borrar la última tarea restante",
+    "description": "Verifica que al borrar la última tarea visible la página muestre el estado vacío.",
+    "category": "Listado de tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Delete tasks one by one until only one remains"
+      },
+      {
+        "type": "action",
+        "description": "Click the delete action for the last remaining task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no tasks are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Crear una tarea con detalles opcionales completos",
+    "description": "Verifica que una tarea se cree con título, descripción, prioridad y fecha límite y quede disponible en la lista tras volver a la página.",
+    "category": "Alta de tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the title field with Tarea con detalles"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the optional description field with Descripción de prueba"
+      },
+      {
+        "type": "action",
+        "description": "Select a high priority value"
+      },
+      {
+        "type": "action",
+        "description": "Fill a valid due date into the due date field"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button to create the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the created task is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task shows its due date information"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Filtrar tareas por prioridad alta",
+    "description": "Verifica que el filtro de prioridad muestra solo las tareas de prioridad alta.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select high priority in the priority filter"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only high priority tasks are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected priority filter is preserved"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Filtrar tareas por estado completadas",
+    "description": "Verifica que el filtro de estado muestra solo las tareas completadas.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select completed in the status filter"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only completed tasks are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected status filter is preserved"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Filtrar por prioridad y estado",
+    "description": "Verifica que los filtros de prioridad y estado reduzcan la lista con combinación AND y conserven la selección al recargar.",
+    "category": "Listado de tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select a priority filter value"
+      },
+      {
+        "type": "action",
+        "description": "Select a completed state filter value"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only tasks matching both filters are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected filters remain applied after reload"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Mostrar solo tareas vencidas y ordenar la lista",
+    "description": "Verifica que el filtro de solo vencidas y la ordenación por prioridad o fecha límite funcionen juntos y muestren el estado vacío cuando no hay coincidencias.",
+    "category": "Listado de tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Enable the overdue-only filter"
+      },
+      {
+        "type": "action",
+        "description": "Select an ordering by due date or priority"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only overdue tasks are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is displayed when no tasks match"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Mostrar solo tareas vencidas",
+    "description": "Verifica que activar Solo vencidas deja visibles únicamente las tareas vencidas no completadas.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Enable the overdue-only filter"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only overdue incomplete tasks are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the overdue filter remains enabled"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Crear una tarea sin campos opcionales",
+    "description": "Verifica que una tarea se cree correctamente cuando la descripción y la fecha límite se dejan vacías.",
+    "category": "Alta de tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the title field with Tarea sin opcionales"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button to create the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the created task is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task does not show a due date"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC015",
+    "title": "Ordenar tareas por prioridad",
+    "description": "Verifica que el orden por prioridad muestra primero las tareas altas, luego medias y después bajas.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select priority sorting in the sort control"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tasks are ordered by priority from high to medium to low"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected sort option is preserved"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC016",
+    "title": "Ordenar tareas por fecha límite",
+    "description": "Verifica que el orden por fecha límite muestra primero las fechas más próximas y deja las tareas sin fecha al final.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select due-date sorting in the sort control"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tasks are ordered by due date from earliest to latest"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tasks without a due date appear last"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC017",
+    "title": "Combinar filtros y mostrar vacío sin coincidencias",
+    "description": "Verifica que los filtros se combinan con AND y muestran el estado vacío cuando no queda ninguna tarea.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select high priority in the priority filter"
+      },
+      {
+        "type": "action",
+        "description": "Select completed in the status filter"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message for no matching tasks is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no tasks are shown"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC018",
+    "title": "Conservar filtros aplicados al recargar",
+    "description": "Verifica que la selección de filtros y orden se mantiene después de volver a cargar la página.",
+    "category": "Filtrar y ordenar tareas",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Select high priority in the priority filter"
+      },
+      {
+        "type": "action",
+        "description": "Select overdue-only in the overdue filter"
+      },
+      {
+        "type": "action",
+        "description": "Select priority sorting in the sort control"
+      },
+      {
+        "type": "action",
+        "description": "Apply the filters"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected filters and sorting remain applied"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the filtered task list is still displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC019",
+    "title": "Bloquear el envío con título vacío",
+    "description": "Verifica que el formulario de alta no se envíe cuando el título obligatorio está vacío.",
+    "category": "Alta de tarea",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Leave the title field empty"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button to create the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the browser blocks form submission"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no new task is added to the list"
+      }
+    ],
+    "priority": "Low"
+  }
+]

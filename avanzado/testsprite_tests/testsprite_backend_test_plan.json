@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "post tasks create task with priority and duedate",
+    "description": "Verify that creating a task via POST /tasks with valid priority and due_date fields returns 201 with the task including the specified priority and due_date, and that retrieving the task via GET /tasks/{task_id} returns matching values."
+  },
+  {
+    "id": "TC002",
+    "title": "post tasks validation errors for invalid priority and duedate",
+    "description": "Verify that POST /tasks returns 422 validation errors when priority is invalid or null, or when due_date is malformed."
+  },
+  {
+    "id": "TC003",
+    "title": "put tasks update task priority and duedate",
+    "description": "Verify that PUT /tasks/{task_id} can update priority and due_date fields correctly, including clearing due_date by setting it to null, and that setting priority to null returns a 422 validation error."
+  },
+  {
+    "id": "TC004",
+    "title": "get tasks filter and sort by priority completed overdue",
+    "description": "Verify that GET /tasks supports filtering by priority, completed, overdue, and sorting by priority or due_date, returning correct filtered and ordered task lists, and returns 422 for invalid filter or sort values."
+  },
+  {
+    "id": "TC005",
+    "title": "patch tasks complete marks task completed preserving priority and duedate",
+    "description": "Verify that PATCH /tasks/{task_id}/complete marks the task as completed, returns the updated task including priority and due_date fields, and is idempotent."
+  },
+  {
+    "id": "TC006",
+    "title": "delete tasks removes task or returns 404 if not found",
+    "description": "Verify that DELETE /tasks/{task_id} deletes the task and returns 204, and returns 404 with appropriate message if the task does not exist."
+  },
+  {
+    "id": "TC007",
+    "title": "get root renders html with tasks priority duedate and visual states",
+    "description": "Verify that GET / renders an HTML page listing tasks with their priority, due_date, and visual indicators for overdue and completed tasks, and that filters and sorting can be applied via query string with controls reflecting the state."
+  },
+  {
+    "id": "TC008",
+    "title": "post ui tasks creates task from form and redirects",
+    "description": "Verify that POST /ui/tasks creates a task from form data including priority and due_date (empty due_date saved as null), returns 303 redirect to /, and that the created task appears on the main page with correct fields."
+  },
+  {
+    "id": "TC009",
+    "title": "post ui tasks complete and delete redirect even if task not found",
+    "description": "Verify that POST /ui/tasks/{task_id}/complete and POST /ui/tasks/{task_id}/delete always return 303 redirect to / even if the task id does not exist, without error."
+  },
+  {
+    "id": "TC010",
+    "title": "database migration preserves existing tasks and seeds new tasks",
+    "description": "Verify that starting the application with an existing database migrates without error preserving existing tasks with default priority media and due_date null, that seeding on a fresh database inserts sample tasks covering all priority levels and due_date scenarios, and that repeated starts do not duplicate seed data."
+  }
+]
