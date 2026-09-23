@@ -1,22 +1,39 @@
-import { test, expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+import { test, expect, type Locator, type APIRequestContext } from '@playwright/test';
 
 /**
- * Criterio de `specs/prioridad-y-fecha-limite.md` (Página web):
+ * Criterio de `specs/prioridad-y-fecha-limite.md`:
  *
  *   "Las tareas vencidas se ven distintas de las no vencidas; una tarea
  *    completada con fecha pasada no se marca como vencida."
  *
- * `tests/test_web.py` ya cubre el markup: comprueba que el `<li>` de una tarea
- * vencida sale con `class="overdue"`. Eso verifica que el servidor decide bien
- * quién está vencida, pero no que se vea algo: la clase puede quedar sin ninguna
- * regla CSS y el HTML sigue siendo idéntico.
+ * `tests/test_web.py` lo da por cubierto mirando el HTML (`<li class="overdue">`).
+ * Eso verifica que el backend clasifica bien, no que la tarea *se vea* distinta:
+ * si la regla CSS `li.overdue` desaparece, el HTML sigue igual y el test de
+ * pytest sigue pasando, pero en el navegador las dos filas son idénticas.
  *
- * Por eso acá no miramos clases ni texto, sino los estilos computados que el
- * navegador aplica de verdad a la fila.
+ * Estos tests abren la página de verdad y comparan los estilos calculados que
+ * el navegador termina aplicando a cada fila.
  */
 
-/** Fecha local en `YYYY-MM-DD`, desplazada `dias` respecto de hoy. */
-function fechaRelativa(dias: number): string {
+// Propiedades con las que una fila puede verse distinta de otra. Se compara el
+// `<li>` completo (el contenedor de la tarea), que es donde vive el destaque de
+// vencida. Es un conjunto amplio a propósito: sirve igual si el destaque se
+// hace con fondo, con borde, con color de texto o atenuando la fila.
+const ESTILOS_DE_FILA = [
+  'background-color',
+  'border-left-width',
+  'border-left-style',
+  'border-left-color',
+  'color',
+  'font-weight',
+  'text-decoration-line',
+  'opacity',
+];
+
+type Fila = Record<string, string>;
+
+/** Fecha local del navegador/servidor en `YYYY-MM-DD`, corrida `dias` días. */
+function fecha(dias: number): string {
   const d = new Date();
   d.setDate(d.getDate() + dias);
   const mes = String(d.getMonth() + 1).padStart(2, '0');
@@ -24,126 +41,110 @@ function fechaRelativa(dias: number): string {
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
-/**
- * Cómo se ve la fila: lo que distingue a una tarea vencida del resto es el
- * tratamiento del `<li>` (fondo, borde, sangría) y el de su fecha límite.
- * No fijamos colores concretos a propósito — el criterio pide que se vean
- * distintas, no que sean de un rojo en particular.
- */
-type FirmaVisual = {
-  fondo: string;
-  borde: string;
-  sangria: string;
-  colorFecha: string | null;
-  pesoFecha: string | null;
+/** Estilos que el navegador aplica realmente a la fila de una tarea. */
+async function estilosDeFila(fila: Locator): Promise<Fila> {
+  return fila.evaluate((li, props: string[]) => {
+    const calculado = getComputedStyle(li as Element);
+    return Object.fromEntries(props.map((p) => [p, calculado.getPropertyValue(p)]));
+  }, ESTILOS_DE_FILA);
+}
+
+// Tareas creadas por API con fechas relativas a hoy, para que los tests pasen
+// cualquier día que se corran (criterio de la spec) y no dependan del seed.
+const TAREAS = {
+  vencida: { titulo: 'E2E vencida', due_date: fecha(-1), completar: false },
+  futura: { titulo: 'E2E futura', due_date: fecha(+7), completar: false },
+  completadaVencida: { titulo: 'E2E completada con fecha pasada', due_date: fecha(-1), completar: true },
 };
 
-async function firmaVisual(fila: Locator): Promise<FirmaVisual> {
-  return fila.evaluate((li: HTMLElement): FirmaVisual => {
-    const s = getComputedStyle(li);
-    const fecha = li.querySelector('.due');
-    const f = fecha ? getComputedStyle(fecha) : null;
-    return {
-      fondo: s.backgroundColor,
-      borde: `${s.borderLeftWidth} ${s.borderLeftStyle} ${s.borderLeftColor}`,
-      sangria: s.paddingLeft,
-      colorFecha: f ? f.color : null,
-      pesoFecha: f ? f.fontWeight : null,
-    };
-  });
+let sufijo = '';
+let creadas: number[] = [];
+
+/** Título único de esta corrida, para no chocar con lo que ya haya en la base. */
+function titulo(tarea: keyof typeof TAREAS): string {
+  return `${TAREAS[tarea].titulo} ${sufijo}`;
 }
 
-/** La fila de una tarea, ubicada por id y no por texto, para no depender del título. */
-function fila(page: Page, id: number): Locator {
-  return page.locator(`li:has(form[action="/ui/tasks/${id}/delete"])`);
+/** La fila del listado correspondiente a una de las tareas creadas. */
+function fila(page: import('@playwright/test').Page, tarea: keyof typeof TAREAS): Locator {
+  return page.getByRole('listitem').filter({ hasText: titulo(tarea) });
 }
 
-async function crearTarea(
-  api: APIRequestContext,
-  datos: { title: string; due_date: string | null },
-): Promise<number> {
-  const res = await api.post('/tasks', { data: { priority: 'media', ...datos } });
-  expect(res.status(), `no se pudo crear la tarea "${datos.title}"`).toBe(201);
-  return (await res.json()).id;
-}
+test.beforeEach(async ({ request }: { request: APIRequestContext }) => {
+  sufijo = Math.random().toString(36).slice(2, 8);
+  creadas = [];
 
-// Las fechas se calculan respecto de hoy, así que el test vale cualquier día
-// en que se corra; las tareas se crean y se borran acá mismo para no depender
-// del seed ni dejar basura en `tasks.db`.
-let idVencida: number;
-let idAlDia: number;
-let idCompletadaConFechaPasada: number;
+  for (const clave of Object.keys(TAREAS) as (keyof typeof TAREAS)[]) {
+    const { due_date, completar } = TAREAS[clave];
+    const alta = await request.post('/tasks', {
+      data: { title: titulo(clave), priority: 'media', due_date },
+    });
+    expect(alta.status(), `no se pudo crear la tarea "${titulo(clave)}"`).toBe(201);
 
-test.beforeAll(async ({ playwright, baseURL }) => {
-  const api = await playwright.request.newContext({ baseURL });
-  idVencida = await crearTarea(api, { title: 'E2E vencida', due_date: fechaRelativa(-7) });
-  idAlDia = await crearTarea(api, { title: 'E2E al dia', due_date: fechaRelativa(7) });
-  idCompletadaConFechaPasada = await crearTarea(api, {
-    title: 'E2E completada con fecha pasada',
-    due_date: fechaRelativa(-7),
-  });
-  const completar = await api.patch(`/tasks/${idCompletadaConFechaPasada}/complete`);
-  expect(completar.status()).toBe(200);
-  await api.dispose();
-});
+    const { id } = await alta.json();
+    creadas.push(id);
 
-test.afterAll(async ({ playwright, baseURL }) => {
-  const api = await playwright.request.newContext({ baseURL });
-  for (const id of [idVencida, idAlDia, idCompletadaConFechaPasada]) {
-    await api.delete(`/tasks/${id}`);
+    if (completar) {
+      const completada = await request.patch(`/tasks/${id}/complete`);
+      expect(completada.status()).toBe(200);
+    }
   }
-  await api.dispose();
 });
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+test.afterEach(async ({ request }: { request: APIRequestContext }) => {
+  for (const id of creadas) {
+    await request.delete(`/tasks/${id}`);
+  }
 });
 
-test('la tarea vencida se ve distinta de la que todavía no venció', async ({ page }) => {
-  await expect(fila(page, idVencida)).toBeVisible();
+test.describe('Criterio: las tareas vencidas se ven distintas de las no vencidas', () => {
+  test('la tarea vencida se destaca visualmente frente a una no vencida', async ({ page }) => {
+    await page.goto('/');
 
-  const vencida = await firmaVisual(fila(page, idVencida));
-  const alDia = await firmaVisual(fila(page, idAlDia));
+    const vencida = fila(page, 'vencida');
+    const futura = fila(page, 'futura');
+    await expect(vencida).toBeVisible();
+    await expect(futura).toBeVisible();
 
-  expect(
-    vencida,
-    'la tarea vencida se renderiza igual que una no vencida: el navegador no le ' +
-      'aplica ningún estilo propio (fondo, borde, sangría ni color de fecha)',
-  ).not.toEqual(alDia);
-});
+    const [estiloVencida, estiloFutura] = await Promise.all([
+      estilosDeFila(vencida),
+      estilosDeFila(futura),
+    ]);
 
-test('la marca "Vencida" se destaca del resto de la línea de datos', async ({ page }) => {
-  const marca = fila(page, idVencida).locator('.overdue-label');
-  await expect(marca).toBeVisible();
+    // El HTML puede marcar la tarea como vencida (class="overdue") y aun así
+    // renderizarse idéntica si no hay CSS que la acompañe: eso es lo que este
+    // test tiene que detectar.
+    expect(
+      estiloVencida,
+      'la fila vencida y la no vencida se renderizan con los mismos estilos: ' +
+        'en el navegador no se distinguen',
+    ).not.toEqual(estiloFutura);
+  });
 
-  const { colorMarca, colorAlrededor, pesoMarca, pesoAlrededor } = await fila(page, idVencida).evaluate(
-    (li: HTMLElement) => {
-      const etiqueta = li.querySelector('.overdue-label') as HTMLElement;
-      const meta = li.querySelector('.meta') as HTMLElement;
-      return {
-        colorMarca: getComputedStyle(etiqueta).color,
-        colorAlrededor: getComputedStyle(meta).color,
-        pesoMarca: getComputedStyle(etiqueta).fontWeight,
-        pesoAlrededor: getComputedStyle(meta).fontWeight,
-      };
-    },
-  );
+  test('la tarea vencida muestra su marca de vencida y la no vencida no', async ({ page }) => {
+    await page.goto('/');
 
-  expect(
-    `${colorMarca} / ${pesoMarca}`,
-    'la palabra "Vencida" se ve igual que el resto del texto de la fila: está en ' +
-      'el HTML pero sin ningún resalte visual',
-  ).not.toEqual(`${colorAlrededor} / ${pesoAlrededor}`);
-});
+    await expect(fila(page, 'vencida')).toContainText('Vencida');
+    await expect(fila(page, 'futura')).not.toContainText('Vencida');
+  });
 
-test('una tarea completada con fecha pasada no se destaca como vencida', async ({ page }) => {
-  const completada = await firmaVisual(fila(page, idCompletadaConFechaPasada));
-  const alDia = await firmaVisual(fila(page, idAlDia));
+  test('una tarea completada con fecha pasada no se ve como vencida', async ({ page }) => {
+    await page.goto('/');
 
-  expect(
-    { fondo: completada.fondo, borde: completada.borde, sangria: completada.sangria },
-    'una tarea completada con fecha pasada quedó resaltada como vencida',
-  ).toEqual({ fondo: alDia.fondo, borde: alDia.borde, sangria: alDia.sangria });
+    const completada = fila(page, 'completadaVencida');
+    await expect(completada).toBeVisible();
+    await expect(completada).not.toContainText('Vencida');
 
-  await expect(fila(page, idCompletadaConFechaPasada).locator('.overdue-label')).toHaveCount(0);
+    const [estiloCompletada, estiloFutura] = await Promise.all([
+      estilosDeFila(completada),
+      estilosDeFila(fila(page, 'futura')),
+    ]);
+
+    // La fila completada tiene su propio tratamiento (el título tachado), pero
+    // el contenedor no debe llevar el destaque de vencida.
+    expect(
+      estiloCompletada,
+      'la tarea completada con fecha pasada se está destacando como vencida',
+    ).toEqual(estiloFutura);
+  });
 });
