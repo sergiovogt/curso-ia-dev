@@ -1,7 +1,8 @@
 # Skills
 
-Dos skills de ejemplo, entregadas con el **módulo 1**. Resuelven un problema
-concreto que apareció en la sesión: **qué hacer cuando el contexto se llena.**
+Tres skills de ejemplo. Las dos primeras, entregadas con el **módulo 1**,
+resuelven un problema concreto que apareció en la sesión: **qué hacer cuando el
+contexto se llena.** La tercera, del **módulo 5**, está más abajo.
 
 ## El problema
 
@@ -85,6 +86,22 @@ Vienen con las convenciones de quien las escribió. Tres cosas a revisar:
    `Notas técnicas`, `Pendiente`. Ajustalo a lo que a vos te sirva leer tres
    semanas después. Si tocás esto, revisá también cómo lee `retomar-sesion`,
    sobre todo el bloque `### Pendiente`.
+
+## `abrir-dia-jira` (módulo 5)
+
+Entregada con el **módulo 5**. Arma la foto del equipo para arrancar el día a
+partir de Jira: en qué está cada persona, quién se quedó sin tareas en cola,
+qué venció, qué vence esta semana y qué tareas en curso no tienen movimiento.
+Es de solo lectura y necesita el conector de Atlassian.
+
+```bash
+cp -r skills/abrir-dia-jira ~/.claude/skills/
+```
+
+Antes de usarla, hay que completar la sección *Configuración* del `SKILL.md`:
+el sitio de Jira, las claves de los espacios y la lista del equipo. Sin la
+lista, la skill no puede detectar a alguien que se quedó sin trabajo asignado,
+porque esa persona no aparece en ninguna consulta.
 
 ## Cómo está hecha una skill
 
